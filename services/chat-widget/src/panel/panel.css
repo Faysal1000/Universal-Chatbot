@@ -1,0 +1,55 @@
+/*
+ * The chat panel's styles, adopted into the widget's shadow root. Viewport breakpoints are switched off: the
+ * panel is narrow on every screen, so the shared components always use their compact (mobile-first) layout.
+ */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css' layer(utilities);
+@import '../../../frontend-chat-interface/chat-core/styles/chat-core.css';
+
+@source '../../../frontend-chat-interface/chat-core';
+@source '../';
+
+@theme {
+  --breakpoint-*: initial;
+}
+
+@theme inline {
+  --font-sans: var(
+    --chat-font-family,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Noto Sans',
+    'Noto Sans Bengali',
+    'Nirmala UI',
+    sans-serif
+  );
+}
+
+.ucb-chat {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.ucb-chat:lang(bn) {
+  line-height: 1.7;
+}
+
+.ucb-chat ::-webkit-scrollbar {
+  width: 10px;
+}
+
+.ucb-chat ::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: var(--border-strong) padding-box;
+}
+
+.ucb-chat * {
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}

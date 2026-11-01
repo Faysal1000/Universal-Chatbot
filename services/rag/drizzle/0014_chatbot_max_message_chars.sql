@@ -1,0 +1,2 @@
+ALTER TABLE "chatbot_settings_versions" ADD COLUMN "max_message_chars" smallint DEFAULT 700 NOT NULL;--> statement-breakpoint
+ALTER TABLE "chatbot_settings_versions" ADD CONSTRAINT "chatbot_settings_max_message_chars_in_range" CHECK ("chatbot_settings_versions"."max_message_chars" BETWEEN 50 AND 8000);

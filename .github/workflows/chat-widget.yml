@@ -1,0 +1,35 @@
+name: chat-widget
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - services/chat-widget/**
+      # The widget bundles the chat app's shared core and reuses its e2e seeding.
+      - services/frontend-chat-interface/chat-core/**
+      - services/frontend-chat-interface/e2e/support/**
+      - .github/workflows/chat-widget.yml
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Typecheck, lint, format, test, build, bundle budget
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/chat-widget
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: services/chat-widget/package-lock.json
+      - run: npm ci
+      # check = typecheck, lint, format, unit tests, build and the gzip budget of every bundle part.
+      - run: npm run check

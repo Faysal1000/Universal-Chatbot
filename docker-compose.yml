@@ -1,0 +1,275 @@
+# ==============================================================================
+#  Universal Chatbot: every service on one machine. PostgreSQL (with pgvector, which holds the
+#  search index) and object storage are external (Neon gives both); Redis runs here.
+#
+#    cp platform.env.example platform.env      # then set every secret
+#    make up                                    # = docker compose --env-file platform.env up --build -d --wait
+#
+#  UIs (bound to localhost only):
+#    Admin console   http://localhost:3100
+#    Chat            http://localhost:3000
+#    RAG API         http://localhost:8080/docs
+# ==============================================================================
+name: universal-chatbot
+
+x-hardened: &hardened
+  security_opt:
+    - no-new-privileges:true
+  restart: unless-stopped
+
+x-read-only: &read-only
+  read_only: true
+  cap_drop:
+    - ALL
+
+x-rag-service: &rag-service
+  <<: [*hardened, *read-only]
+  build:
+    context: ./services/rag
+  image: rag:local
+  env_file:
+    - path: ./services/rag/.env
+      required: false
+  environment:
+    RAG_DATABASE_URL: ${RAG_DATABASE_URL:?set in platform.env}
+    RAG_REDIS_URL: redis://redis:6379/0
+    RAG_S3_ENDPOINT: ${S3_ENDPOINT:?set in platform.env}
+    RAG_S3_REGION: ${S3_REGION:?set in platform.env}
+    RAG_S3_BUCKET: ${S3_BUCKET:?set in platform.env}
+    RAG_S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?set in platform.env}
+    RAG_S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?set in platform.env}
+    RAG_S3_FORCE_PATH_STYLE: "true"
+    RAG_EMBEDDING_SERVER_URL: http://embedding-server:8000
+    RAG_EMBEDDING_SERVER_API_KEY: ${EMBEDDING_SERVER_API_KEY:?set in platform.env}
+    RAG_LLM_GATEWAY_URL: http://llm-gateway:4000
+    RAG_LLM_GATEWAY_API_KEY: ${LLM_GATEWAY_API_KEY:?set in platform.env}
+    RAG_ADMIN_API_KEY: ${RAG_ADMIN_API_KEY:?set in platform.env}
+    RAG_CLIENT_HASH_SECRET: ${RAG_CLIENT_HASH_SECRET:?set in platform.env}
+    RAG_PUBLIC_CORS_ALLOWED_ORIGINS: http://localhost:3000
+    RAG_HOST: 0.0.0.0
+    RAG_PORT: "8080"
+    RAG_LOG_FORMAT: json
+  tmpfs:
+    - /tmp:size=64m
+  stop_grace_period: 45s
+
+x-llm-gateway-service: &llm-gateway-service
+  <<: [*hardened, *read-only]
+  build:
+    context: ./services/llm-gateway
+  image: llm-gateway:local
+  env_file:
+    - path: ./services/llm-gateway/.env
+      required: false
+  environment:
+    LLM_GATEWAY_DATABASE_URL: ${LLM_GATEWAY_DATABASE_URL:?set in platform.env}
+    LLM_GATEWAY_API_KEY: ${LLM_GATEWAY_API_KEY}
+    LLM_GATEWAY_ADMIN_API_KEY: ${LLM_GATEWAY_ADMIN_API_KEY:?set in platform.env}
+    LLM_GATEWAY_REGISTRATION_API_KEY: ${LOCAL_MODEL_REGISTRATION_API_KEY:?set in platform.env}
+    LLM_GATEWAY_ENCRYPTION_KEY: ${LLM_GATEWAY_ENCRYPTION_KEY:?set in platform.env}
+    LLM_GATEWAY_ADMIN_USERNAME: ${LLM_GATEWAY_ADMIN_USERNAME:-admin}
+    LLM_GATEWAY_ADMIN_PASSWORD_HASH: ${LLM_GATEWAY_ADMIN_PASSWORD_HASH:?set in platform.env}
+    LLM_GATEWAY_ADMIN_SESSION_SECRET: ${LLM_GATEWAY_ADMIN_SESSION_SECRET:?set in platform.env}
+    LLM_GATEWAY_HOST: 0.0.0.0
+    LLM_GATEWAY_PORT: "4000"
+  tmpfs:
+    - /tmp:size=64m
+
+services:
+  # ---------------------------------------------------------------- data stores
+
+  redis:
+    <<: *hardened
+    image: redis:8-alpine
+    # BullMQ needs noeviction; appendonly keeps queued jobs across restarts.
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+
+  # ---------------------------------------------------------------- services
+  embedding-server:
+    <<: [*hardened, *read-only]
+    build:
+      context: ./services/embedding-server
+      args:
+        INFERENCE_DEVICE: cpu
+    image: embedding-server:cpu
+    env_file:
+      - path: ./services/embedding-server/.env
+        required: false
+    environment:
+      EMBEDDING_SERVER_API_KEY: ${EMBEDDING_SERVER_API_KEY}
+      EMBEDDING_SERVER_DEVICE: cpu
+      EMBEDDING_SERVER_HOST: 0.0.0.0
+      EMBEDDING_SERVER_PORT: "8000"
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - huggingface-cache:/var/cache/huggingface
+    tmpfs:
+      - /tmp:size=256m
+    deploy:
+      resources:
+        limits:
+          memory: 7g
+    stop_grace_period: 4m
+
+  local-llm:
+    <<: [*hardened, *read-only]
+    build:
+      context: ./services/local-llm
+      args:
+        INFERENCE_DEVICE: cpu
+    image: local-llm:cpu
+    env_file:
+      - path: ./services/local-llm/.env
+        required: false
+    environment:
+      LOCAL_LLM_INFERENCE_API_KEY: ${LOCAL_LLM_INFERENCE_API_KEY:?set in platform.env}
+      LOCAL_LLM_ADMIN_API_KEY: ${LOCAL_LLM_ADMIN_API_KEY:?set in platform.env}
+      LOCAL_LLM_GATEWAY_BASE_URL: http://llm-gateway:4000
+      LOCAL_LLM_GATEWAY_REGISTRATION_API_KEY: ${LOCAL_MODEL_REGISTRATION_API_KEY}
+      LOCAL_LLM_PUBLIC_BASE_URL: http://local-llm:8000
+      LOCAL_LLM_HOST: 0.0.0.0
+      LOCAL_LLM_PORT: "8000"
+    ports:
+      - "127.0.0.1:8095:8000"
+    volumes:
+      - huggingface-cache:/var/cache/huggingface
+      - local-llm-state:/var/lib/local-llm
+    tmpfs:
+      - /tmp:size=512m
+    deploy:
+      resources:
+        limits:
+          memory: 7g
+    stop_grace_period: 90s
+
+  llm-gateway-migrate:
+    <<: *llm-gateway-service
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+    restart: "no"
+
+  llm-gateway:
+    <<: *llm-gateway-service
+    ports:
+      - "127.0.0.1:4000:4000"
+    depends_on:
+      llm-gateway-migrate:
+        condition: service_completed_successfully
+    # Exceeds LLM_GATEWAY_GRACEFUL_SHUTDOWN_TIMEOUT_SECONDS so open streams can finish.
+    stop_grace_period: 45s
+
+  rag-migrate:
+    <<: *rag-service
+    command: ["node", "--enable-source-maps", "dist/database/run-migrations.js"]
+    restart: "no"
+
+  rag-api:
+    <<: *rag-service
+    command: ["node", "--enable-source-maps", "dist/main.api.js"]
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on: &rag-dependencies
+      rag-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  rag-worker:
+    <<: *rag-service
+    command: ["node", "--enable-source-maps", "dist/main.worker.js"]
+    ports:
+      - "127.0.0.1:8081:8080"
+    depends_on: *rag-dependencies
+
+  document-parser:
+    <<: [*hardened, *read-only]
+    build:
+      context: ./services/document-parser
+    image: document-parser:local
+    env_file:
+      - path: ./services/document-parser/.env
+        required: false
+    environment:
+      DOCUMENT_PARSER_REDIS_URL: redis://redis:6379/0
+      DOCUMENT_PARSER_QUEUE_PREFIX: rag
+      DOCUMENT_PARSER_S3_ENDPOINT: ${S3_ENDPOINT}
+      DOCUMENT_PARSER_S3_REGION: ${S3_REGION}
+      DOCUMENT_PARSER_S3_BUCKET: ${S3_BUCKET}
+      DOCUMENT_PARSER_S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      DOCUMENT_PARSER_S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      DOCUMENT_PARSER_S3_FORCE_PATH_STYLE: "true"
+      DOCUMENT_PARSER_LLM_GATEWAY_URL: http://llm-gateway:4000
+      DOCUMENT_PARSER_LLM_GATEWAY_API_KEY: ${LLM_GATEWAY_API_KEY}
+      DOCUMENT_PARSER_HOST: 0.0.0.0
+      DOCUMENT_PARSER_PORT: "8090"
+      DOCUMENT_PARSER_LOG_FORMAT: json
+    ports:
+      - "127.0.0.1:8090:8090"
+    depends_on:
+      redis:
+        condition: service_healthy
+    tmpfs:
+      - /tmp:size=256m
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+    # Exceeds DOCUMENT_PARSER_GRACEFUL_SHUTDOWN_TIMEOUT_SECONDS (60 s) so active jobs can finish.
+    stop_grace_period: 90s
+
+  # The single admin UI. Its backend holds every service's admin key; the browser never does.
+  admin-console:
+    <<: [*hardened, *read-only]
+    build:
+      context: ./services/admin-console
+    image: admin-console:local
+    environment:
+      ADMIN_CONSOLE_ADMIN_USERNAME: ${ADMIN_CONSOLE_ADMIN_USERNAME:-admin}
+      ADMIN_CONSOLE_ADMIN_PASSWORD_HASH: ${ADMIN_CONSOLE_ADMIN_PASSWORD_HASH:?set in platform.env}
+      # Browsers send Secure cookies to http://localhost; set false only for plain HTTP on another host.
+      ADMIN_CONSOLE_COOKIE_SECURE: ${ADMIN_CONSOLE_COOKIE_SECURE:-true}
+      ADMIN_CONSOLE_LLM_GATEWAY_URL: http://llm-gateway:4000
+      ADMIN_CONSOLE_LLM_GATEWAY_ADMIN_API_KEY: ${LLM_GATEWAY_ADMIN_API_KEY}
+      ADMIN_CONSOLE_RAG_URL: http://rag-api:8080
+      ADMIN_CONSOLE_RAG_WORKER_URL: http://rag-worker:8080
+      ADMIN_CONSOLE_RAG_ADMIN_API_KEY: ${RAG_ADMIN_API_KEY}
+      ADMIN_CONSOLE_LOCAL_LLM_URL: http://local-llm:8000
+      ADMIN_CONSOLE_LOCAL_LLM_ADMIN_API_KEY: ${LOCAL_LLM_ADMIN_API_KEY}
+      ADMIN_CONSOLE_EMBEDDING_SERVER_URL: http://embedding-server:8000
+      ADMIN_CONSOLE_DOCUMENT_PARSER_URL: http://document-parser:8090
+    ports:
+      - "127.0.0.1:3100:8080"
+    tmpfs:
+      - /tmp:size=16m
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    stop_grace_period: 15s
+
+  frontend-chat-interface:
+    <<: *hardened
+    build:
+      context: ./services/frontend-chat-interface
+    image: frontend-chat-interface:local
+    environment:
+      # Origins as the browser sees them.
+      CHAT_RUNTIME_API_BASE_URL: http://localhost:8080
+      CHAT_RUNTIME_CSP_CONNECT_SRC: http://localhost:8080
+    ports:
+      - "127.0.0.1:3000:8080"
+
+volumes:
+  redis-data:
+  huggingface-cache:
+  local-llm-state:

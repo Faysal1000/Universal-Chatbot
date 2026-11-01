@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://universal-chatbot.local/contracts/job-envelope.v1.schema.json",
+  "title": "JobEnvelope",
+  "description": "Wrapper around every BullMQ job payload exchanged between rag and other services. Producers set `meta`; consumers reject an unknown major `schemaVersion`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["meta", "payload"],
+  "properties": {
+    "meta": {
+      "title": "JobMetadata",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "enqueuedAt"],
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "description": "Major version of this envelope contract."
+        },
+        "requestId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "HTTP request that caused the job, for log correlation."
+        },
+        "enqueuedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "payload": {
+      "description": "Queue-specific payload, defined by the queue's own schema."
+    }
+  },
+  "examples": [
+    {
+      "meta": {
+        "schemaVersion": 1,
+        "requestId": "4f6c8a52-6f0e-4c5e-9c1a-2b8d1e7f9a10",
+        "enqueuedAt": "2026-10-29T08:15:30.120Z"
+      },
+      "payload": {
+        "documentId": "0f8fad5b-d9cb-469f-a165-70867728950e"
+      }
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Orion Lighthouse · plain HTML host</title>
+    <link rel="stylesheet" href="../demo.css" />
+  </head>
+  <body>
+    <main class="site">
+      <h1>Orion Lighthouse</h1>
+      <p>
+        A plain HTML page with the widget loaded by a classic script tag, the way a CMS such as WordPress
+        embeds it. The page's own CSS is loud on purpose; the widget is isolated in its shadow root.
+      </p>
+      <p><button type="button">A page button</button></p>
+    </main>
+    <!-- The embed: one classic script and one element. -->
+    <script src="/cdn/embed.js" async></script>
+    <script type="module" src="./plainHost.ts"></script>
+  </body>
+</html>

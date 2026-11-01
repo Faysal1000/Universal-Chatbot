@@ -1,0 +1,9 @@
+# Rendered by the nginx image's envsubst step at start-up (only defined variables are substituted).
+# Included in every location: nginx drops server-level add_header directives in any location that has its own.
+add_header X-Content-Type-Options "nosniff" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+add_header X-Frame-Options "DENY" always;
+add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+# CHAT_RUNTIME_CSP_CONNECT_SRC (default `https:`) must cover the backend origin and presigned image URLs.
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: ${CHAT_RUNTIME_CSP_CONNECT_SRC}; font-src 'self' data:; connect-src 'self' ${CHAT_RUNTIME_CSP_CONNECT_SRC}; frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+

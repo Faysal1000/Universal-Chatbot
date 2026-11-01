@@ -1,0 +1,37 @@
+[project]
+name = "llm-gateway"
+version = "1.0.0"
+description = "Single middleware for every LLM call: task routing, protocol translation, fallbacks, and metrics"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "error::pytest.PytestUnraisableExceptionWarning",
+    # Starlette's test client warns about plain httpx; the gateway uses httpx deliberately.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "S", "BLE", "ASYNC", "RUF", "ANN"]
+ignore = ["ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "ANN"]
+"migrations/**" = ["ANN"]
+# Embeds Postman test scripts (JavaScript) and request descriptions as literal lines.
+"scripts/**" = ["E501"]
+# Dashboard SQL is assembled only from fixed allowlisted fragments; all values are bound parameters.
+"app/persistence/request_metrics_repository.py" = ["S608"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["^migrations/"]

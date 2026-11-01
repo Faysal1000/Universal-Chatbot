@@ -1,0 +1,26 @@
+@import 'tailwindcss';
+@import '../../chat-core/styles/chat-core.css';
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  :lang(bn) body {
+    font-family: 'Noto Sans Bengali Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.7;
+  }
+}
+
+/* Cloudflare Turnstile container (only rendered when the backend requires it). */
+.turnstile-container {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 60;
+}

@@ -1,0 +1,48 @@
+name: llm-gateway
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - services/llm-gateway/**
+      - .github/workflows/llm-gateway.yml
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, typecheck, test (with PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: services/llm-gateway
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: llm_gateway_test
+          POSTGRES_PASSWORD: llm_gateway_test
+          POSTGRES_DB: llm_gateway_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U llm_gateway_test" --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      # Throwaway CI database; the database-backed tests are skipped without it.
+      LLM_GATEWAY_TEST_DATABASE_URL: postgresql+asyncpg://llm_gateway_test:llm_gateway_test@localhost:5432/llm_gateway_test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/llm-gateway/requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy app
+      - run: pytest -q

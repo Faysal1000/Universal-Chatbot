@@ -1,0 +1,16 @@
+**/__pycache__
+**/*.py[cod]
+.env
+.env.*
+!.env.example
+.venv
+tests/
+scripts/
+.git
+.gitignore
+.pytest_cache
+.mypy_cache
+.ruff_cache
+requirements-dev.txt
+postman_collection.json
+README.md

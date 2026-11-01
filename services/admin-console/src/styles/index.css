@@ -1,0 +1,272 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens. Light: cool paper with ink-navy type. Dark: deep navy surfaces.
+ * The side rail is navy in both. Hairline rules divide everything; there are no card
+ * shadows. Signal orange is the only action colour. Status colours never travel alone: the
+ * StatePlacard shape always carries the same meaning.
+ * Theme: <html data-theme="light|dark">, set before paint by /theme-init.js; without it the
+ * system preference decides.
+ */
+:root {
+  color-scheme: light;
+  --page: #f3f5f8;
+  --surface: #ffffff;
+  --surface-raised: #f8f9fb;
+  --surface-input: #ffffff;
+  --surface-hover: rgba(19, 35, 59, 0.05);
+  --surface-selected: rgba(19, 35, 59, 0.08);
+  --border: #d8dde5;
+  --border-strong: #8a95a5;
+  --text-primary: #111a27;
+  --text-secondary: #3c4757;
+  --text-muted: #586577;
+  --rail: #13233b;
+  --rail-raised: #1c3050;
+  --rail-text: #c5d0df;
+  --rail-text-strong: #ffffff;
+  --rail-rule: rgba(255, 255, 255, 0.1);
+  --accent: #c2410c;
+  --accent-hover: #9a3412;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(194, 65, 12, 0.1);
+  --focus-ring: #1d4ed8;
+  --rail-focus-ring: #7aa7ff;
+  --scrim: rgba(8, 14, 24, 0.55);
+  --shadow-overlay: rgba(8, 14, 24, 0.4);
+  --status-good: #15803d;
+  --status-good-text: #166534;
+  --status-working: #1d4ed8;
+  --status-warning: #a16207;
+  --status-warning-text: #854d0e;
+  --status-critical: #b91c1c;
+  --status-critical-text: #991b1b;
+  --status-idle: #6b7686;
+  --chart-grid: #e3e7ed;
+  --chart-axis: #b9c1cc;
+  --chart-series-1: #2a78d6;
+  --chart-series-2: #eb6834;
+  --chart-series-3: #13875e;
+  --chart-series-4: #a66f00;
+  --chart-series-5: #c4457a;
+  --chart-series-other: #7c7b75;
+  --selection: rgba(194, 65, 12, 0.2);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page: #0b111a;
+  --surface: #111a26;
+  --surface-raised: #162130;
+  --surface-input: #0e1621;
+  --surface-hover: rgba(230, 236, 245, 0.05);
+  --surface-selected: rgba(230, 236, 245, 0.09);
+  --border: #233042;
+  --border-strong: #56677f;
+  --text-primary: #e8edf4;
+  --text-secondary: #b6c0cd;
+  --text-muted: #8f9bab;
+  --rail: #0e1b2e;
+  --rail-raised: #18294a;
+  --rail-text: #b4c1d3;
+  --rail-text-strong: #ffffff;
+  --rail-rule: rgba(255, 255, 255, 0.08);
+  --accent: #fb923c;
+  --accent-hover: #fdba74;
+  --accent-contrast: #1c0d03;
+  --accent-soft: rgba(251, 146, 60, 0.14);
+  --focus-ring: #7aa7ff;
+  --rail-focus-ring: #7aa7ff;
+  --scrim: rgba(0, 0, 0, 0.6);
+  --shadow-overlay: rgba(0, 0, 0, 0.5);
+  --status-good: #22c55e;
+  --status-good-text: #4ade80;
+  --status-working: #7aa7ff;
+  --status-warning: #eab308;
+  --status-warning-text: #facc15;
+  --status-critical: #ef4444;
+  --status-critical-text: #f87171;
+  --status-idle: #8f9bab;
+  --chart-grid: #1f2a3a;
+  --chart-axis: #34425a;
+  --chart-series-1: #3987e5;
+  --chart-series-2: #d95926;
+  --chart-series-3: #199e70;
+  --chart-series-4: #c98500;
+  --chart-series-5: #d55181;
+  --chart-series-other: #6f6e69;
+  --selection: rgba(251, 146, 60, 0.3);
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-input: var(--surface-input);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-selected: var(--surface-selected);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-muted: var(--text-muted);
+  --color-rail: var(--rail);
+  --color-rail-raised: var(--rail-raised);
+  --color-rail-text: var(--rail-text);
+  --color-rail-text-strong: var(--rail-text-strong);
+  --color-rail-rule: var(--rail-rule);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-accent-soft: var(--accent-soft);
+  --color-focus-ring: var(--focus-ring);
+  --color-rail-focus-ring: var(--rail-focus-ring);
+  --color-good: var(--status-good);
+  --color-good-text: var(--status-good-text);
+  --color-working: var(--status-working);
+  --color-warning: var(--status-warning);
+  --color-warning-text: var(--status-warning-text);
+  --color-critical: var(--status-critical);
+  --color-critical-text: var(--status-critical-text);
+  --color-idle: var(--status-idle);
+  --font-sans: 'Public Sans Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--page);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.45;
+    font-feature-settings: 'tnum' 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--selection);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  input,
+  textarea,
+  select {
+    caret-color: var(--accent);
+    accent-color: var(--accent);
+  }
+
+  a {
+    text-underline-offset: 3px;
+  }
+
+  * {
+    scrollbar-color: var(--border-strong) transparent;
+    scrollbar-width: thin;
+  }
+
+  dialog::backdrop {
+    background: var(--scrim);
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+}
+
+@layer components {
+  /* Numbers align on the digit everywhere they are compared. */
+  .numeric-cell {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* Wide tables: an edge shadow appears on the side that has more columns to scroll to. */
+  .scroll-edge-x {
+    background:
+      linear-gradient(to right, var(--surface) 34%, transparent) left / 1.5rem 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 34%, transparent) right / 1.5rem 100% no-repeat local,
+      linear-gradient(to right, var(--shadow-overlay), transparent) left / 0.5rem 100% no-repeat scroll,
+      linear-gradient(to left, var(--shadow-overlay), transparent) right / 0.5rem 100% no-repeat scroll;
+  }
+
+  /* Narrow screens: each row of a stacked table wraps as a block, so its actions stay on screen. */
+  @media (width < 40rem) {
+    .table-stacked thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+    .table-stacked tr {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.375rem 0.75rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .table-stacked td {
+      display: block;
+      text-align: left;
+    }
+  }
+
+  /* Native selects without the browser's arrow: one chevron, muted grey in both themes. */
+  .select-chevron {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a95a5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.625rem center;
+    background-size: 1rem;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* A manifest field label: small, upright, never a kicker above a heading. */
+  .field-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+}
+
+/* Charts keep the previous render, dimmed, while new data loads. */
+.is-refetching {
+  opacity: 0.6;
+  transition: opacity 150ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
+
+/* Stacked cells drop their own hairline and padding; this sits in the utilities layer so it beats the cell's utilities. */
+@layer utilities {
+  @media (width < 40rem) {
+    .table-stacked td {
+      border: 0;
+      padding: 0;
+    }
+  }
+}

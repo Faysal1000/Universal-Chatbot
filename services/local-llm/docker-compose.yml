@@ -1,0 +1,52 @@
+# Isolated local run of local-llm (CPU image).
+#   cp .env.example .env              # then set every secret
+#   docker compose up --build         # first start downloads Nemotron Parse (~2.5 GB)
+#   curl http://localhost:8095/health/ready
+#
+# This file runs local-llm on its own, beside llm-gateway's own compose project, so the two
+# reach each other through the host. On the platform network (root docker-compose.yml) they
+# use service names instead: http://local-llm:8000 and http://llm-gateway:4000.
+name: local-llm
+
+services:
+  local-llm:
+    build:
+      context: .
+      args:
+        INFERENCE_DEVICE: cpu
+    image: local-llm:cpu
+    env_file: .env
+    environment:
+      LOCAL_LLM_HOST: 0.0.0.0
+      LOCAL_LLM_PORT: "8000"
+      LOCAL_LLM_GATEWAY_BASE_URL: http://host.docker.internal:4000
+      LOCAL_LLM_PUBLIC_BASE_URL: http://host.docker.internal:${LOCAL_LLM_HOST_PORT:-8095}
+    ports:
+      - "127.0.0.1:${LOCAL_LLM_HOST_PORT:-8095}:8000"
+    extra_hosts:
+      # Docker Desktop provides this name; on Linux it maps to the host's gateway address.
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # Model weights, trusted remote code and deployment state survive restarts and rebuilds.
+      - huggingface-cache:/var/cache/huggingface
+      - local-llm-state:/var/lib/local-llm
+    # Same hardening as production: immutable filesystem, no privileges.
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          # Nemotron Parse (float32 on CPU, ~2.6 GB) plus a small GGUF chat model and headroom.
+          memory: 7g
+    # Must exceed LOCAL_LLM_GRACEFUL_SHUTDOWN_TIMEOUT_SECONDS plus the 30 s model drain.
+    stop_grace_period: 90s
+    restart: unless-stopped
+
+volumes:
+  huggingface-cache:
+  local-llm-state:

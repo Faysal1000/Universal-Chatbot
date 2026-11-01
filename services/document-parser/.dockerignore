@@ -1,0 +1,16 @@
+**/__pycache__
+**/*.py[cod]
+.env
+.env.*
+!.env.example
+.venv
+.git
+.gitignore
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+docker-compose.yml
+postman_collection.json
+README.md

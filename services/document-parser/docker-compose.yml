@@ -1,0 +1,45 @@
+# Isolated development run of document-parser against the platform's Redis and llm-gateway
+# (started from the repository root: `make up`). Object storage is external; its endpoint
+# and keys come from .env.
+#
+#   cp .env.example .env      # set the storage endpoint and keys and the gateway key
+#   docker compose up --build
+#   curl http://localhost:8090/health/ready
+#
+# Values under `environment:` override .env with the in-network service names.
+name: document-parser
+
+services:
+  document-parser:
+    build:
+      context: .
+    image: document-parser:local
+    env_file: .env
+    environment:
+      DOCUMENT_PARSER_REDIS_URL: redis://redis:6379/0
+      DOCUMENT_PARSER_LLM_GATEWAY_URL: http://llm-gateway:4000
+      DOCUMENT_PARSER_HOST: 0.0.0.0
+      DOCUMENT_PARSER_PORT: "8090"
+    ports:
+      - "127.0.0.1:${DOCUMENT_PARSER_HOST_PORT:-8090}:8090"
+    networks:
+      - platform
+    # Same hardening as production: immutable filesystem, no privileges.
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+    stop_grace_period: 90s
+    restart: unless-stopped
+
+networks:
+  platform:
+    name: universal-chatbot_default
+    external: true

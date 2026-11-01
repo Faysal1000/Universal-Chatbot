@@ -1,0 +1,28 @@
+# Pull-request checks: each service workflow runs its lint, typecheck and tests.
+name: ci
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  embedding-server:
+    uses: ./.github/workflows/embedding-server.yml
+  local-llm:
+    uses: ./.github/workflows/local-llm.yml
+  llm-gateway:
+    uses: ./.github/workflows/llm-gateway.yml
+  rag:
+    uses: ./.github/workflows/rag.yml
+  admin-console:
+    uses: ./.github/workflows/admin-console.yml
+  chat:
+    uses: ./.github/workflows/chat.yml
+  chat-widget:
+    uses: ./.github/workflows/chat-widget.yml

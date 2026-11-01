@@ -1,0 +1,58 @@
+# --- Secrets & Environment Variables ---
+.env
+.env.*
+*.env
+!.env.example
+
+# --- Python & Virtual Environments ---
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+dist/
+*.egg-info/
+
+# --- Model & Data Caches ---
+models/
+checkpoints/
+.cache/
+huggingface/
+tmp/
+temp/
+
+# --- Testing & Code Quality ---
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# --- Operating System & Editor Files ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- Node / Frontend ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+coverage/
+test-results/
+playwright-report/
+
+# --- Local tooling ---
+.claude/*
+
+# Local connection strings
+neon.txt
+password.txt
+

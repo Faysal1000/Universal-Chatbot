@@ -1,0 +1,81 @@
+name: rag
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - services/rag/**
+      - services/document-parser/**
+      - docker-compose.yml
+      - .github/workflows/rag.yml
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, typecheck, test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/rag
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: services/rag/package-lock.json
+      - run: npm ci
+      - name: Generated contract types are up to date
+        run: |
+          npm run contracts:generate
+          npx prettier --write src/contracts/generated
+          git diff --exit-code -- src/contracts/generated
+      - name: Migrations match the schema
+        run: |
+          npx drizzle-kit generate --name ci_drift_check
+          test -z "$(git status --porcelain -- drizzle)" || (echo "Schema changed without a migration: run npm run db:generate" && exit 1)
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run build
+
+  document-parser:
+    name: document-parser lint, typecheck, test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/document-parser
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/document-parser/requirements*.txt
+      - name: Tesseract with English and Bengali
+        run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends tesseract-ocr tesseract-ocr-eng tesseract-ocr-ben fonts-lohit-beng-bengali
+      - run: pip install --no-deps -r requirements.txt -r requirements-dev.txt
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy app
+      - run: pytest -q
+
+  compose:
+    name: Validate compose files
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate compose files
+        run: |
+          cp platform.env.example platform.env
+          docker compose --env-file platform.env config --quiet
+          cp services/rag/.env.example services/rag/.env
+          docker compose -f services/rag/docker-compose.yml config --quiet

@@ -1,0 +1,1825 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "local-llm",
+    "description": "Self-hosted open-weight models (Nemotron Parse and admin deployments) behind llm-gateway.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health/live": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Liveness",
+        "description": "The process is up and its event loop answers.",
+        "operationId": "liveness_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Liveness Health Live Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Readiness",
+        "description": "Ready only when the system deployment (Nemotron Parse) serves requests and no shutdown is under way.",
+        "operationId": "readiness_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Readiness Health Ready Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/models": {
+      "get": {
+        "tags": [
+          "inference"
+        ],
+        "summary": "List Models",
+        "description": "Deployments that are loaded and ready to serve.",
+        "operationId": "list_models_v1_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelList"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "InferenceBearer": []
+          },
+          {
+            "InferenceHeader": []
+          }
+        ]
+      }
+    },
+    "/v1/chat/completions": {
+      "post": {
+        "tags": [
+          "inference"
+        ],
+        "summary": "Create Chat Completion",
+        "description": "Generate a completion; ``stream: true`` returns Server-Sent Events ending with ``[DONE]``.",
+        "operationId": "create_chat_completion_v1_chat_completions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatCompletionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "InferenceBearer": []
+          },
+          {
+            "InferenceHeader": []
+          }
+        ]
+      }
+    },
+    "/admin/v1/system": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Describe System",
+        "description": "CPU, RAM and GPUs, plus how much memory admission control can still hand out.",
+        "operationId": "describe_system_admin_v1_system_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemView"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminBearer": []
+          },
+          {
+            "AdminHeader": []
+          }
+        ]
+      }
+    },
+    "/admin/v1/deployments": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "List Deployments",
+        "description": "Every deployment with status, device, memory and throughput.",
+        "operationId": "list_deployments_admin_v1_deployments_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentList"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminBearer": []
+          },
+          {
+            "AdminHeader": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Create Deployment",
+        "description": "Reserve memory and start downloading and loading; 409 if it cannot fit, 422 if it cannot run.",
+        "operationId": "create_deployment_admin_v1_deployments_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeploymentCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "AdminBearer": []
+          },
+          {
+            "AdminHeader": []
+          }
+        ]
+      }
+    },
+    "/admin/v1/deployments/{deployment_name}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get Deployment",
+        "description": "One deployment.",
+        "operationId": "get_deployment_admin_v1_deployments__deployment_name__get",
+        "security": [
+          {
+            "AdminBearer": []
+          },
+          {
+            "AdminHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deployment_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Deployment Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update Deployment",
+        "description": "Change settings, or upgrade to a new model or revision (also for the system deployment).",
+        "operationId": "update_deployment_admin_v1_deployments__deployment_name__patch",
+        "security": [
+          {
+            "AdminBearer": []
+          },
+          {
+            "AdminHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deployment_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Deployment Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeploymentUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Delete Deployment",
+        "description": "Unload and remove (403 for the system deployment).",
+        "operationId": "delete_deployment_admin_v1_deployments__deployment_name__delete",
+        "security": [
+          {
+            "AdminBearer": []
+          },
+          {
+            "AdminHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deployment_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Deployment Name"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/v1/deployments/{deployment_name}/load": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Load Deployment",
+        "description": "Load an unloaded or failed deployment.",
+        "operationId": "load_deployment_admin_v1_deployments__deployment_name__load_post",
+        "security": [
+          {
+            "AdminBearer": []
+          },
+          {
+            "AdminHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deployment_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Deployment Name"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/v1/deployments/{deployment_name}/unload": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Unload Deployment",
+        "description": "Free the deployment's memory (403 for the system deployment).",
+        "operationId": "unload_deployment_admin_v1_deployments__deployment_name__unload_post",
+        "security": [
+          {
+            "AdminBearer": []
+          },
+          {
+            "AdminHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deployment_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Deployment Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/v1/deployments/{deployment_name}/restart": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Restart Deployment",
+        "description": "Unload and load again.",
+        "operationId": "restart_deployment_admin_v1_deployments__deployment_name__restart_post",
+        "security": [
+          {
+            "AdminBearer": []
+          },
+          {
+            "AdminHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deployment_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Deployment Name"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChatCompletionRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Model"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "type": "array",
+            "maxItems": 512,
+            "minItems": 1,
+            "title": "Messages"
+          },
+          "stream": {
+            "type": "boolean",
+            "title": "Stream",
+            "default": false
+          },
+          "stream_options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StreamOptions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens"
+          },
+          "max_completion_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Completion Tokens"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
+          "top_p": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top P"
+          },
+          "top_k": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top K"
+          },
+          "repetition_penalty": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 10.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repetition Penalty"
+          },
+          "stop": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "chat_template_kwargs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Template Kwargs"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "model",
+          "messages"
+        ],
+        "title": "ChatCompletionRequest",
+        "description": "``POST /v1/chat/completions`` body. ``model`` is the deployment name."
+      },
+      "ChatMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "system",
+              "developer",
+              "user",
+              "assistant",
+              "tool"
+            ],
+            "title": "Role"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TextContentPart"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageContentPart"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "image_url": "#/components/schemas/ImageContentPart",
+                      "text": "#/components/schemas/TextContentPart"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "title": "ChatMessage",
+        "description": "One conversation turn."
+      },
+      "ConfiguredSettingsView": {
+        "properties": {
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision",
+            "description": "null = main"
+          },
+          "device": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "gpu",
+              "cpu"
+            ],
+            "title": "Device"
+          },
+          "dtype": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "bfloat16",
+              "float16",
+              "float32"
+            ],
+            "title": "Dtype"
+          },
+          "context_window_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Window Tokens",
+            "description": "null = the model's native window, capped by the default"
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Output Tokens",
+            "description": "null = the service default"
+          },
+          "reasoning_control": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "reasoning_effort",
+              "enable_thinking"
+            ],
+            "title": "Reasoning Control"
+          }
+        },
+        "type": "object",
+        "required": [
+          "revision",
+          "device",
+          "dtype",
+          "context_window_tokens",
+          "max_output_tokens",
+          "reasoning_control"
+        ],
+        "title": "ConfiguredSettingsView",
+        "description": "Exactly what the admin configured; the top-level fields show what the service resolved and runs."
+      },
+      "DeploymentCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Name",
+            "examples": [
+              "qwen3.5-0.8b"
+            ]
+          },
+          "model_id": {
+            "type": "string",
+            "maxLength": 200,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*(:[A-Za-z0-9_.-]+)?$",
+            "title": "Model Id",
+            "examples": [
+              "unsloth/Qwen3.5-0.8B-GGUF:Q4_K_M"
+            ]
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision",
+            "description": "Commit SHA, branch or tag; blank = main"
+          },
+          "device": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "gpu",
+              "cpu"
+            ],
+            "title": "Device",
+            "default": "auto"
+          },
+          "dtype": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "bfloat16",
+              "float16",
+              "float32"
+            ],
+            "title": "Dtype",
+            "description": "Transformers models only; GGUF files fix their own",
+            "default": "auto"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "context_window_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1048576.0,
+                "minimum": 256.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Window Tokens"
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1048576.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Output Tokens"
+          },
+          "default_for_tasks": {
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]{0,62}$"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Default For Tasks"
+          },
+          "reasoning_control": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "reasoning_effort",
+              "enable_thinking"
+            ],
+            "title": "Reasoning Control",
+            "description": "How llm-gateway switches reasoning for this deployment: `auto` registers `enable_thinking` when the model's chat template has Qwen's thinking switch and otherwise leaves the gateway's setting alone",
+            "default": "auto"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "model_id"
+        ],
+        "title": "DeploymentCreateRequest",
+        "description": "Deploy a Hugging Face model (``org/repo``, or ``org/repo:QUANT`` for GGUF) under a name."
+      },
+      "DeploymentList": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/DeploymentView"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "DeploymentList",
+        "description": "Every deployment, system deployment first."
+      },
+      "DeploymentStatus": {
+        "type": "string",
+        "enum": [
+          "unloaded",
+          "downloading",
+          "loading",
+          "ready",
+          "unloading",
+          "failed"
+        ],
+        "title": "DeploymentStatus",
+        "description": "Lifecycle of a deployment; only ``READY`` deployments serve requests."
+      },
+      "DeploymentUpdateRequest": {
+        "properties": {
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*(:[A-Za-z0-9_.-]+)?$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "device": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "gpu",
+                  "cpu"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device"
+          },
+          "dtype": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "bfloat16",
+                  "float16",
+                  "float32"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dtype"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "context_window_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1048576.0,
+                "minimum": 256.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Window Tokens"
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1048576.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Output Tokens"
+          },
+          "default_for_tasks": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_.-]{0,62}$"
+                },
+                "type": "array",
+                "maxItems": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default For Tasks"
+          },
+          "reasoning_control": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "reasoning_effort",
+                  "enable_thinking"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Control",
+            "description": "How llm-gateway switches reasoning for this deployment: `auto` registers `enable_thinking` when the model's chat template has Qwen's thinking switch and otherwise leaves the gateway's setting alone"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DeploymentUpdateRequest",
+        "description": "Change a deployment; a new ``model_id`` or ``revision`` swaps the model without downtime when memory allows."
+      },
+      "DeploymentView": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision",
+            "description": "Requested revision (null = main)"
+          },
+          "resolved_revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved Revision",
+            "description": "Commit actually loaded"
+          },
+          "engine": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "transformers",
+                  "llama_cpp"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine"
+          },
+          "is_system": {
+            "type": "boolean",
+            "title": "Is System"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DeploymentStatus"
+          },
+          "status_changed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Status Changed At"
+          },
+          "loaded_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loaded At"
+          },
+          "device": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "gpu",
+              "cpu"
+            ],
+            "title": "Device"
+          },
+          "resolved_device": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "cpu",
+                  "cuda"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved Device"
+          },
+          "dtype": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dtype"
+          },
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Capabilities"
+          },
+          "context_window_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Window Tokens"
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Output Tokens"
+          },
+          "reasoning_control": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "reasoning_effort",
+                  "enable_thinking"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Control",
+            "description": "Registered with llm-gateway; null = not sent (not loaded, or left to the gateway)"
+          },
+          "default_for_tasks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Default For Tasks"
+          },
+          "configured": {
+            "$ref": "#/components/schemas/ConfiguredSettingsView"
+          },
+          "memory": {
+            "$ref": "#/components/schemas/MemoryView"
+          },
+          "throughput": {
+            "$ref": "#/components/schemas/ThroughputView"
+          },
+          "requests_in_flight": {
+            "type": "integer",
+            "title": "Requests In Flight"
+          },
+          "requests_queued": {
+            "type": "integer",
+            "title": "Requests Queued"
+          },
+          "pending_update": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pending Update"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "display_name",
+          "model_id",
+          "revision",
+          "resolved_revision",
+          "engine",
+          "is_system",
+          "status",
+          "status_changed_at",
+          "loaded_at",
+          "device",
+          "resolved_device",
+          "dtype",
+          "capabilities",
+          "context_window_tokens",
+          "max_output_tokens",
+          "reasoning_control",
+          "default_for_tasks",
+          "configured",
+          "memory",
+          "throughput",
+          "requests_in_flight",
+          "requests_queued",
+          "pending_update",
+          "last_error"
+        ],
+        "title": "DeploymentView",
+        "description": "One deployment as the admin console shows it."
+      },
+      "DeviceBudgetView": {
+        "properties": {
+          "device": {
+            "type": "string",
+            "enum": [
+              "cpu",
+              "cuda"
+            ],
+            "title": "Device"
+          },
+          "capacity_bytes": {
+            "type": "integer",
+            "title": "Capacity Bytes"
+          },
+          "reserved_bytes": {
+            "type": "integer",
+            "title": "Reserved Bytes"
+          },
+          "free_bytes": {
+            "type": "integer",
+            "title": "Free Bytes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "device",
+          "capacity_bytes",
+          "reserved_bytes",
+          "free_bytes"
+        ],
+        "title": "DeviceBudgetView",
+        "description": "What admission control may hand out on one device."
+      },
+      "EngineSupportView": {
+        "properties": {
+          "transformers_cuda": {
+            "type": "boolean",
+            "title": "Transformers Cuda"
+          },
+          "llama_cpp_installed": {
+            "type": "boolean",
+            "title": "Llama Cpp Installed"
+          },
+          "llama_cpp_cuda": {
+            "type": "boolean",
+            "title": "Llama Cpp Cuda"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transformers_cuda",
+          "llama_cpp_installed",
+          "llama_cpp_cuda"
+        ],
+        "title": "EngineSupportView",
+        "description": "Which engines can use a GPU in this image on this host."
+      },
+      "GpuView": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "total_memory_bytes": {
+            "type": "integer",
+            "title": "Total Memory Bytes"
+          },
+          "free_memory_bytes": {
+            "type": "integer",
+            "title": "Free Memory Bytes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "name",
+          "total_memory_bytes",
+          "free_memory_bytes"
+        ],
+        "title": "GpuView",
+        "description": "One CUDA device."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ImageContentPart": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "image_url",
+            "title": "Type"
+          },
+          "image_url": {
+            "$ref": "#/components/schemas/ImageUrl"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "image_url"
+        ],
+        "title": "ImageContentPart",
+        "description": "An image segment of a multi-part message."
+      },
+      "ImageUrl": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "ImageUrl",
+        "description": "An image reference; only ``data:`` URIs are accepted (no server-side fetches)."
+      },
+      "MemoryView": {
+        "properties": {
+          "estimated_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Bytes"
+          },
+          "reserved_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reserved Bytes"
+          },
+          "measured_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Measured Bytes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estimated_bytes",
+          "reserved_bytes",
+          "measured_bytes"
+        ],
+        "title": "MemoryView",
+        "description": "Estimated (before loading), reserved (admission) and measured (after loading) memory."
+      },
+      "ModelCard": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "object": {
+            "type": "string",
+            "const": "model",
+            "title": "Object",
+            "default": "model"
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created"
+          },
+          "owned_by": {
+            "type": "string",
+            "title": "Owned By",
+            "default": "local-llm"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created"
+        ],
+        "title": "ModelCard",
+        "description": "One entry of ``GET /v1/models``."
+      },
+      "ModelList": {
+        "properties": {
+          "object": {
+            "type": "string",
+            "const": "list",
+            "title": "Object",
+            "default": "list"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ModelCard"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "ModelList",
+        "description": "``GET /v1/models`` response: every deployment that is ready to serve."
+      },
+      "StreamOptions": {
+        "properties": {
+          "include_usage": {
+            "type": "boolean",
+            "title": "Include Usage",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "StreamOptions",
+        "description": "Streaming options; ``include_usage`` adds a final usage-only chunk."
+      },
+      "SystemView": {
+        "properties": {
+          "cpu_cores": {
+            "type": "integer",
+            "title": "Cpu Cores"
+          },
+          "ram_capacity_bytes": {
+            "type": "integer",
+            "title": "Ram Capacity Bytes"
+          },
+          "ram_available_bytes": {
+            "type": "integer",
+            "title": "Ram Available Bytes"
+          },
+          "memory_reserve_bytes": {
+            "type": "integer",
+            "title": "Memory Reserve Bytes"
+          },
+          "gpus": {
+            "items": {
+              "$ref": "#/components/schemas/GpuView"
+            },
+            "type": "array",
+            "title": "Gpus"
+          },
+          "budgets": {
+            "items": {
+              "$ref": "#/components/schemas/DeviceBudgetView"
+            },
+            "type": "array",
+            "title": "Budgets"
+          },
+          "engines": {
+            "$ref": "#/components/schemas/EngineSupportView"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cpu_cores",
+          "ram_capacity_bytes",
+          "ram_available_bytes",
+          "memory_reserve_bytes",
+          "gpus",
+          "budgets",
+          "engines"
+        ],
+        "title": "SystemView",
+        "description": "Host resources and memory budgets."
+      },
+      "TextContentPart": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "text",
+            "title": "Type"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "TextContentPart",
+        "description": "A text segment of a multi-part message."
+      },
+      "ThroughputView": {
+        "properties": {
+          "window_seconds": {
+            "type": "integer",
+            "title": "Window Seconds"
+          },
+          "completed_requests": {
+            "type": "integer",
+            "title": "Completed Requests"
+          },
+          "generated_tokens": {
+            "type": "integer",
+            "title": "Generated Tokens"
+          },
+          "tokens_per_second": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokens Per Second"
+          },
+          "pages_parsed": {
+            "type": "integer",
+            "title": "Pages Parsed"
+          },
+          "seconds_per_page": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seconds Per Page"
+          },
+          "pages_per_minute": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pages Per Minute"
+          }
+        },
+        "type": "object",
+        "required": [
+          "window_seconds",
+          "completed_requests",
+          "generated_tokens",
+          "tokens_per_second",
+          "pages_parsed",
+          "seconds_per_page",
+          "pages_per_minute"
+        ],
+        "title": "ThroughputView",
+        "description": "Speed over the recent window; rates are null until a request completes."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "InferenceBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "InferenceHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      },
+      "AdminBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "AdminHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    }
+  }
+}

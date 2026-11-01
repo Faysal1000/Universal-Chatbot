@@ -1,0 +1,7 @@
+dist
+node_modules
+contracts
+src/contracts
+playwright-report
+test-results
+package-lock.json

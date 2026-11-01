@@ -1,0 +1,57 @@
+[project]
+name = "document-parser"
+version = "1.0.0"
+description = "Stateless BullMQ worker that inspects and parses documents into block manifests"
+requires-python = ">=3.12,<3.13"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = ["error::pytest.PytestUnraisableExceptionWarning"]
+markers = [
+    "tesseract: needs the tesseract binary with eng+ben data (runs in the Docker test stage)",
+    "infrastructure: needs Redis and MinIO from the root docker-compose (opt-in)",
+]
+addopts = "-m 'not infrastructure'"
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/adapters/vendor/*", "app/contracts/generated/*"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = true
+exclude_also = ["if __name__ == .__main__.:", "raise NotImplementedError"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = ["app/adapters/vendor", "app/contracts/generated"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "S", "BLE", "ASYNC", "RUF", "ANN", "SIM", "PT", "C90"]
+ignore = ["ANN401"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 8
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "S311", "ANN"]
+"scripts/**" = ["T201"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["^app/adapters/vendor/"]
+
+[[tool.mypy.overrides]]
+module = ["app.adapters.vendor.*"]
+follow_imports = "skip"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["pypdfium2.*", "pytesseract.*", "bullmq.*", "reportlab.*"]
+ignore_missing_imports = true

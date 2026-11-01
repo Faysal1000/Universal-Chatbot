@@ -1,0 +1,1 @@
+ALTER TABLE "chatbot_settings_versions" DROP COLUMN "rerank_score_threshold";

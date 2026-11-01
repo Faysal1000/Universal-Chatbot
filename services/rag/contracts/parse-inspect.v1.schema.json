@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://universal-chatbot.local/contracts/parse-inspect.v1.schema.json",
+  "title": "ParseInspectContract",
+  "description": "Queue `parse.inspect` (producer: rag worker, consumer: document-parser). Converts the upload to PDF when needed and classifies every page. The job's return value is `ParseInspectResult`.",
+  "$defs": {
+    "ObjectReference": {
+      "title": "ObjectReference",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bucket", "key"],
+      "properties": {
+        "bucket": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 63
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        }
+      }
+    },
+    "ParseInspectPayload": {
+      "title": "ParseInspectPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["documentId", "ingestionRunId", "source", "outputPrefix", "limits"],
+      "properties": {
+        "documentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "ingestionRunId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source": {
+          "title": "SourceDocument",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["object", "sha256", "mimeType", "byteSize"],
+          "properties": {
+            "object": {
+              "$ref": "#/$defs/ObjectReference"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "mimeType": {
+              "enum": [
+                "application/pdf",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "image/png",
+                "image/jpeg",
+                "image/tiff"
+              ]
+            },
+            "byteSize": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "outputPrefix": {
+          "type": "string",
+          "pattern": "^documents/[0-9a-f-]{36}/runs/[0-9a-f-]{36}/$",
+          "description": "Every object the parser writes for this run goes under this key prefix, so a retry overwrites instead of duplicating."
+        },
+        "limits": {
+          "title": "InspectLimits",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maxPages"],
+          "properties": {
+            "maxPages": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5000
+            }
+          }
+        }
+      }
+    },
+    "PageInspection": {
+      "title": "PageInspection",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pageNumber",
+        "pageKind",
+        "widthPoints",
+        "heightPoints",
+        "textCoverageRatio",
+        "complexity"
+      ],
+      "properties": {
+        "pageNumber": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pageKind": {
+          "enum": ["digital", "scanned", "hybrid"]
+        },
+        "widthPoints": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "heightPoints": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "textCoverageRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "complexity": {
+          "title": "PageComplexity",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["hasTables", "hasFormulas", "hasCharts", "hasImages", "hasMultipleColumns"],
+          "properties": {
+            "hasTables": {
+              "type": "boolean"
+            },
+            "hasFormulas": {
+              "type": "boolean"
+            },
+            "hasCharts": {
+              "type": "boolean"
+            },
+            "hasImages": {
+              "type": "boolean"
+            },
+            "hasMultipleColumns": {
+              "type": "boolean",
+              "description": "Two or more text columns, so native reading order is unreliable."
+            }
+          }
+        }
+      }
+    },
+    "ParseInspectResult": {
+      "title": "ParseInspectResult",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["documentId", "ingestionRunId", "parseSource", "pageCount", "pages"],
+      "properties": {
+        "documentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "ingestionRunId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "parseSource": {
+          "$ref": "#/$defs/ObjectReference"
+        },
+        "pageCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "detectedLanguage": {
+          "type": ["string", "null"],
+          "description": "BCP 47 tag of the dominant language, e.g. `en` or `bn`."
+        },
+        "pages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/PageInspection"
+          }
+        }
+      },
+      "description": "Job return value. `parseSource` is the PDF every later stage reads: the original for PDFs, otherwise the converted file under outputPrefix."
+    }
+  },
+  "examples": [
+    {
+      "payload": {
+        "documentId": "0f8fad5b-d9cb-469f-a165-70867728950e",
+        "ingestionRunId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        "source": {
+          "object": {
+            "bucket": "rag",
+            "key": "originals/9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+          },
+          "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+          "mimeType": "application/pdf",
+          "byteSize": 482113
+        },
+        "outputPrefix": "documents/0f8fad5b-d9cb-469f-a165-70867728950e/runs/7c9e6679-7425-40de-944b-e07fc1f90ae7/",
+        "limits": {
+          "maxPages": 200
+        }
+      },
+      "result": {
+        "documentId": "0f8fad5b-d9cb-469f-a165-70867728950e",
+        "ingestionRunId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        "parseSource": {
+          "bucket": "rag",
+          "key": "originals/9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+        },
+        "pageCount": 2,
+        "detectedLanguage": "en",
+        "pages": [
+          {
+            "pageNumber": 1,
+            "pageKind": "digital",
+            "widthPoints": 595.28,
+            "heightPoints": 841.89,
+            "textCoverageRatio": 0.62,
+            "complexity": {
+              "hasTables": true,
+              "hasFormulas": false,
+              "hasCharts": false,
+              "hasImages": false,
+              "hasMultipleColumns": false
+            }
+          },
+          {
+            "pageNumber": 2,
+            "pageKind": "scanned",
+            "widthPoints": 595.28,
+            "heightPoints": 841.89,
+            "textCoverageRatio": 0,
+            "complexity": {
+              "hasTables": false,
+              "hasFormulas": false,
+              "hasCharts": false,
+              "hasImages": true,
+              "hasMultipleColumns": false
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,456 @@
+/*
+ * Styles of everything the loader draws before the chat panel's code arrives: the launcher, the frame of the
+ * panel and its placement. `all: initial` stops the page's inherited styles (fonts, colours, line height) at
+ * the shadow boundary; custom properties still inherit, which is how sites theme the widget.
+ */
+:host {
+  all: initial;
+  --ucb-offset-x: 20px;
+  --ucb-offset-y: 20px;
+  --ucb-gap: 12px;
+  --ucb-launcher-size: 56px;
+  --ucb-panel-width: 400px;
+  --ucb-panel-height: 680px;
+  --ucb-z-index: 2147483000;
+  --ucb-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:host([hidden]) {
+  display: none;
+}
+
+.ucb-root {
+  --ucb-glass-tint: rgb(255 255 255 / 0.12);
+  --ucb-glass-frost: rgb(255 255 255 / 0.66);
+  --ucb-glass-blur: 4px;
+  --ucb-glass-rim: rgb(255 255 255 / 0.55);
+  --ucb-glass-light: rgb(255 255 255 / 0.95);
+  --ucb-glass-bounce: rgb(255 255 255 / 0.45);
+  --ucb-glass-drop: rgb(16 16 24 / 0.22);
+  --ucb-surface: var(--chat-surface-raised, #ffffff);
+  --ucb-ink: var(--chat-ink, #1b1b21);
+  --ucb-line: var(--chat-border, #e5e5ea);
+  font-family: var(
+    --chat-font-family,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Noto Sans',
+    'Noto Sans Bengali',
+    'Nirmala UI',
+    sans-serif
+  );
+  -webkit-font-smoothing: antialiased;
+  color: var(--ucb-ink);
+}
+
+.ucb-root[data-theme='dark'] {
+  --ucb-surface: var(--chat-surface-raised-dark, #24242a);
+  --ucb-ink: var(--chat-ink-dark, #ececf1);
+  --ucb-line: var(--chat-border-dark, #34343c);
+  --ucb-glass-tint: rgb(255 255 255 / 0.06);
+  --ucb-glass-frost: rgb(32 32 40 / 0.62);
+  --ucb-glass-rim: rgb(255 255 255 / 0.22);
+  --ucb-glass-light: rgb(255 255 255 / 0.6);
+  --ucb-glass-bounce: rgb(255 255 255 / 0.2);
+  --ucb-glass-drop: rgb(0 0 0 / 0.45);
+}
+
+/* ── Launcher ─────────────────────────────────────────────────────────────────────────────────────── */
+
+.ucb-launcher {
+  position: fixed;
+  z-index: var(--ucb-z-index);
+  display: flex;
+  align-items: center;
+  height: var(--ucb-launcher-size);
+  min-width: var(--ucb-launcher-size);
+  padding: 0 calc((var(--ucb-launcher-size) - 40px) / 2);
+  border: 0;
+  border-radius: 999px;
+  background-color: var(--ucb-glass-tint);
+  -webkit-backdrop-filter: blur(var(--ucb-glass-blur)) saturate(180%) brightness(1.06);
+  backdrop-filter: blur(var(--ucb-glass-blur)) saturate(180%) brightness(1.06);
+  box-shadow:
+    inset 0 0 0 1px var(--ucb-glass-rim),
+    inset 1.5px 1.5px 1px -0.5px var(--ucb-glass-light),
+    inset -1.5px -1.5px 1px -0.5px var(--ucb-glass-bounce),
+    inset 0 -10px 18px -12px var(--ucb-glass-bounce),
+    0 6px 16px -6px var(--ucb-glass-drop);
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  transition:
+    background-color 260ms ease,
+    box-shadow 200ms ease,
+    scale 200ms var(--ucb-ease-out),
+    opacity 160ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * Liquid glass: a near-clear lens over a light blur. The rim is lit from the top left with a fainter bounce
+ * at the bottom right, and a specular glint sits under the top edge; the shadow stays tight and round.
+ */
+.ucb-launcher::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(120% 70% at 30% 0%, var(--ucb-glass-bounce), transparent 60%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Chromium bends the page at the rim through an SVG displacement filter (glassRefraction.ts). */
+.ucb-root[data-refraction='true'] .ucb-launcher {
+  -webkit-backdrop-filter: url(#ucb-glass-refraction) blur(var(--ucb-glass-blur)) saturate(180%)
+    brightness(1.06);
+  backdrop-filter: url(#ucb-glass-refraction) blur(var(--ucb-glass-blur)) saturate(180%) brightness(1.06);
+}
+
+/* While the label shows, the glass frosts over so the text reads on any page; the bare orb stays clear. */
+.ucb-root:not([data-collapsed='true']) .ucb-launcher,
+.ucb-root[data-open='false'] .ucb-launcher:hover,
+.ucb-root[data-open='false'] .ucb-launcher:focus-visible {
+  --ucb-glass-blur: 14px;
+  background-color: var(--ucb-glass-frost);
+}
+
+.ucb-launcher:active {
+  scale: 0.96;
+}
+
+.ucb-launcher:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* The label folds into the orb: the grid track animates from its content width to zero. */
+.ucb-label {
+  display: grid;
+  grid-template-columns: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-columns 420ms var(--ucb-ease-out),
+    opacity 260ms ease;
+}
+
+.ucb-label-text {
+  overflow: hidden;
+  max-width: 240px;
+  padding: 0 10px 0 10px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.ucb-root[lang='bn'] .ucb-label-text {
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.ucb-root[data-collapsed='true'] .ucb-label {
+  grid-template-columns: 0fr;
+  opacity: 0;
+}
+
+.ucb-root[data-collapsed='true'] .ucb-label-text {
+  padding: 0;
+}
+
+@media (hover: hover) {
+  .ucb-root[data-collapsed='true'][data-open='false'] .ucb-launcher:hover .ucb-label {
+    grid-template-columns: 1fr;
+    opacity: 1;
+  }
+  .ucb-root[data-collapsed='true'][data-open='false'] .ucb-launcher:hover .ucb-label-text {
+    padding: 0 10px;
+  }
+}
+
+.ucb-root[data-collapsed='true'][data-open='false'] .ucb-launcher:focus-visible .ucb-label {
+  grid-template-columns: 1fr;
+  opacity: 1;
+}
+
+.ucb-root[data-collapsed='true'][data-open='false'] .ucb-launcher:focus-visible .ucb-label-text {
+  padding: 0 10px;
+}
+
+/* ── The orb: dotted ribbons woven round a sphere; it fills the round button once the label folds ───── */
+
+.ucb-orb {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+}
+
+/* Centred absolutely, so the canvas stays centred when it grows past its slot on the round button. */
+.ucb-orb-canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 32px;
+  height: 32px;
+  translate: -50% -50%;
+  transition:
+    width 420ms var(--ucb-ease-out),
+    height 420ms var(--ucb-ease-out),
+    opacity 160ms ease,
+    scale 260ms var(--ucb-ease-out);
+}
+
+.ucb-root[data-collapsed='true'] .ucb-launcher .ucb-orb-canvas {
+  width: 54px;
+  height: 54px;
+}
+
+@media (hover: hover) {
+  .ucb-root[data-collapsed='true'][data-open='false'] .ucb-launcher:hover .ucb-orb-canvas {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.ucb-root[data-collapsed='true'][data-open='false'] .ucb-launcher:focus-visible .ucb-orb-canvas {
+  width: 32px;
+  height: 32px;
+}
+
+.ucb-close-icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ucb-ink);
+  opacity: 0;
+  rotate: -60deg;
+  transition:
+    opacity 180ms ease,
+    rotate 320ms var(--ucb-ease-out);
+}
+
+.ucb-close-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.ucb-root[data-open='true'] .ucb-launcher .ucb-orb-canvas {
+  opacity: 0.35;
+  scale: 0.7;
+}
+
+.ucb-root[data-open='true'] .ucb-close-icon {
+  opacity: 1;
+  rotate: 0deg;
+}
+
+.ucb-root[data-open='true'] .ucb-label {
+  grid-template-columns: 0fr;
+  opacity: 0;
+}
+
+.ucb-root[data-open='true'] .ucb-label-text {
+  padding: 0;
+}
+
+/* ── Placement: nine anchors ──────────────────────────────────────────────────────────────────────── */
+
+.ucb-root[data-vertical='top'] .ucb-launcher {
+  top: var(--ucb-offset-y);
+}
+.ucb-root[data-vertical='bottom'] .ucb-launcher {
+  bottom: var(--ucb-offset-y);
+}
+.ucb-root[data-vertical='middle'] .ucb-launcher {
+  top: 50%;
+  translate: 0 -50%;
+}
+.ucb-root[data-horizontal='left'] .ucb-launcher {
+  left: var(--ucb-offset-x);
+}
+.ucb-root[data-horizontal='right'] .ucb-launcher {
+  right: var(--ucb-offset-x);
+}
+.ucb-root[data-horizontal='center'] .ucb-launcher {
+  left: 50%;
+  translate: -50% 0;
+}
+.ucb-root[data-vertical='middle'][data-horizontal='center'] .ucb-launcher {
+  translate: -50% -50%;
+}
+
+/* ── Panel frame (the chat itself renders inside it) ──────────────────────────────────────────────── */
+
+.ucb-panel {
+  --ucb-reach-x: calc(var(--ucb-offset-x) + var(--ucb-launcher-size) + var(--ucb-gap));
+  --ucb-reach-y: calc(var(--ucb-offset-y) + var(--ucb-launcher-size) + var(--ucb-gap));
+  position: fixed;
+  z-index: var(--ucb-z-index);
+  display: flex;
+  flex-direction: column;
+  width: min(var(--ucb-panel-width), 100vw - 2 * var(--ucb-offset-x));
+  height: min(var(--ucb-panel-height), 100dvh - var(--ucb-offset-y) - var(--ucb-reach-y));
+  overflow: hidden;
+  border: 1px solid var(--ucb-line);
+  border-radius: 22px;
+  background: var(--chat-canvas, #ffffff);
+  box-shadow:
+    0 2px 6px rgb(16 16 24 / 0.06),
+    0 24px 60px -12px rgb(16 16 24 / 0.32);
+  /* Fixed-position overlays inside the panel (source sheet, toasts) are laid out against the panel. */
+  contain: layout paint;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 180ms ease,
+    transform 380ms var(--ucb-ease-out),
+    visibility 0s;
+}
+
+.ucb-root[data-theme='dark'] .ucb-panel {
+  background: var(--chat-canvas-dark, #161619);
+  box-shadow:
+    0 2px 6px rgb(0 0 0 / 0.4),
+    0 24px 60px -12px rgb(0 0 0 / 0.7);
+}
+
+.ucb-root[data-open='false'] .ucb-panel {
+  visibility: hidden;
+  opacity: 0;
+  transform: translate(var(--ucb-enter-x, 0), var(--ucb-enter-y, 0)) scale(0.94);
+  pointer-events: none;
+  transition:
+    opacity 140ms ease,
+    transform 200ms ease-in,
+    visibility 0s 200ms;
+}
+
+.ucb-root[data-vertical='bottom'] .ucb-panel {
+  bottom: var(--ucb-reach-y);
+  --ucb-enter-y: 12px;
+}
+.ucb-root[data-vertical='top'] .ucb-panel {
+  top: var(--ucb-reach-y);
+  --ucb-enter-y: -12px;
+}
+.ucb-root[data-vertical='middle'] .ucb-panel {
+  top: 50%;
+  translate: 0 -50%;
+  height: min(var(--ucb-panel-height), 100dvh - 2 * var(--ucb-offset-y));
+}
+.ucb-root[data-horizontal='left'] .ucb-panel {
+  left: var(--ucb-offset-x);
+}
+.ucb-root[data-horizontal='right'] .ucb-panel {
+  right: var(--ucb-offset-x);
+}
+.ucb-root[data-horizontal='center'] .ucb-panel {
+  left: 50%;
+  translate: -50% 0;
+}
+.ucb-root[data-vertical='middle'][data-horizontal='left'] .ucb-panel {
+  left: var(--ucb-reach-x);
+  width: min(var(--ucb-panel-width), 100vw - var(--ucb-offset-x) - var(--ucb-reach-x));
+  --ucb-enter-x: -12px;
+}
+.ucb-root[data-vertical='middle'][data-horizontal='right'] .ucb-panel {
+  right: var(--ucb-reach-x);
+  width: min(var(--ucb-panel-width), 100vw - var(--ucb-offset-x) - var(--ucb-reach-x));
+  --ucb-enter-x: 12px;
+}
+.ucb-root[data-vertical='middle'][data-horizontal='center'] .ucb-panel {
+  translate: -50% -50%;
+}
+/* Centred on the screen, the panel covers the launcher; its own header closes it. */
+.ucb-root[data-vertical='middle'][data-horizontal='center'][data-open='true'] .ucb-launcher {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ucb-root[data-vertical='bottom'][data-horizontal='right'] .ucb-panel {
+  transform-origin: bottom right;
+}
+.ucb-root[data-vertical='bottom'][data-horizontal='left'] .ucb-panel {
+  transform-origin: bottom left;
+}
+.ucb-root[data-vertical='bottom'][data-horizontal='center'] .ucb-panel {
+  transform-origin: bottom center;
+}
+.ucb-root[data-vertical='top'][data-horizontal='right'] .ucb-panel {
+  transform-origin: top right;
+}
+.ucb-root[data-vertical='top'][data-horizontal='left'] .ucb-panel {
+  transform-origin: top left;
+}
+.ucb-root[data-vertical='top'][data-horizontal='center'] .ucb-panel {
+  transform-origin: top center;
+}
+.ucb-root[data-vertical='middle'][data-horizontal='left'] .ucb-panel {
+  transform-origin: left center;
+}
+.ucb-root[data-vertical='middle'][data-horizontal='right'] .ucb-panel {
+  transform-origin: right center;
+}
+
+/* Phones: the panel takes the whole screen and brings its own close button. */
+@media (max-width: 639px), (max-height: 520px) {
+  .ucb-root .ucb-panel {
+    inset: var(--ucb-viewport-top, 0) 0 auto;
+    width: 100%;
+    height: var(--ucb-viewport-height, 100dvh);
+    overscroll-behavior: contain;
+    translate: none;
+    border: 0;
+    border-radius: 0;
+    transform-origin: bottom center;
+    --ucb-enter-x: 0;
+    --ucb-enter-y: 24px;
+  }
+  .ucb-root[data-open='true'] .ucb-launcher {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* Shown while the panel's code is still loading. */
+.ucb-panel-loading {
+  display: grid;
+  flex: 1;
+  place-items: center;
+}
+
+.ucb-panel-loading .ucb-orb,
+.ucb-panel-loading .ucb-orb-canvas {
+  width: 64px;
+  height: 64px;
+}
+
+.ucb-panel-error {
+  display: grid;
+  flex: 1;
+  place-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ucb-root *,
+  .ucb-root *::before,
+  .ucb-root *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}

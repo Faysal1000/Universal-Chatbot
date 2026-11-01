@@ -1,0 +1,1 @@
+ALTER TABLE "chatbot_settings_versions" ADD COLUMN "show_sources" boolean DEFAULT true NOT NULL;

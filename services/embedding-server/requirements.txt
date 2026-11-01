@@ -1,0 +1,10 @@
+# Runtime dependencies. PyTorch and torchvision are installed separately in the Dockerfile so the
+# CPU image can use the slim CPU-only wheel. Upper bounds prevent surprise majors.
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.32,<1.0
+pydantic>=2.9,<3.0
+pydantic-settings>=2.6,<3.0
+sentence-transformers[image]>=6.0,<7.0
+accelerate>=1.0,<2.0
+numpy>=1.26,<3.0
+Pillow>=11.0,<14.0

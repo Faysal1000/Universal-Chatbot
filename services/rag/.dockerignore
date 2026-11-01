@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+!.env.example
+*.md
+test
+**/*.test.ts
+.env.example
+docker-compose.yml
+postman_collection.json
+contracts
+scripts

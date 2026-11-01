@@ -1,0 +1,3365 @@
+{
+  "info": {
+    "name": "Embedding Server API",
+    "_postman_id": "c1f7a4d2-8b63-42e1-954f-124b89e7c331",
+    "description": "Requests, automated checks, and saved example responses for the EmbeddingGemma 2 embedding server.\n\nSetup:\n1. Start the server (`docker compose up` or `python -m app` in services/embedding-server) and wait until Readiness returns 200.\n2. Set the `apiKey` collection variable to EMBEDDING_SERVER_API_KEY from your .env.\n3. Set `expectedDimension` to EMBEDDING_SERVER_EMBEDDING_DIMENSION (default 768).\n4. Run the whole collection with the Collection Runner. Every request has pass/fail tests, and each has a saved example response (open a request and pick it from the Examples dropdown) showing exactly what the server returns.\n\nAuth: the X-API-Key header is set once at collection level. Health, docs, and the 401 tests opt out.\n\nError shapes:\n- Schema validation (422): {\"detail\": [{\"type\", \"loc\", \"msg\", \"input\"}, ...]}\n- Service errors (401/413/422/503/504): {\"detail\": \"message\"} plus \"item_index\" for a bad batch item.\n- Every response carries an X-Request-ID header. Send your own X-Request-ID to correlate with server logs.\n\nErrors you cannot trigger on demand (no request in this collection):\n- 503 {\"detail\": \"Embedding service is at capacity; retry shortly\"} + Retry-After: 1. More than EMBEDDING_SERVER_MAX_PENDING_ITEMS items are in flight.\n- 503 {\"detail\": \"Embedding service is not ready\"} + Retry-After: 5. The server is shutting down or its worker stopped.\n- 503 {\"detail\": \"Embedding inference failed\"} + Retry-After: 1. The model raised an error. Safe to retry.\n- 504 {\"detail\": \"Embedding request timed out\"}. Exceeded EMBEDDING_SERVER_REQUEST_TIMEOUT_SECONDS.\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "X-API-Key",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "paste-EMBEDDING_SERVER_API_KEY-from-your-.env-here",
+      "type": "string"
+    },
+    {
+      "key": "expectedDimension",
+      "value": "768",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health & Docs",
+      "description": "No API key needed.",
+      "item": [
+        {
+          "name": "Liveness",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Reports alive\", () => pm.expect(pm.response.json().status).to.eql(\"alive\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/live",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "live"
+              ]
+            },
+            "description": "200 while the process and its inference worker are alive; 503 if the worker crashed.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/health/live",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "health",
+                    "live"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"alive\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Readiness",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Reports ready\", () => pm.expect(pm.response.json().status).to.eql(\"ready\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/ready",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "ready"
+              ]
+            },
+            "description": "200 once the model is loaded and the worker accepts work; 503 while shutting down.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/health/ready",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "health",
+                    "ready"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"ready\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Swagger UI (/docs)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/docs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "docs"
+              ]
+            },
+            "description": "Interactive API docs. Open {{baseUrl}}/docs in a browser. Needs EMBEDDING_SERVER_ENABLE_API_DOCS=true, otherwise 404.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/docs",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "docs"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "html",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "text/html; charset=utf-8"
+                }
+              ],
+              "body": "\n    <!DOCTYPE html>\n    <html>\n    <head>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <link type=\"text/css\" rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css\">\n    <link rel=\"shortcut icon\" href=\"https://fastapi.tiangolo.com/img/favicon.png\">\n    <title>Embedding Server - Swagger UI</title>\n    </head>\n    <body>\n    <div id=\"swagger-ui\">\n    </div>\n    <script src=\"https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js\"></script>\n    <!-- `SwaggerUIBundle` is now available on the page -->\n    <script>\n    cons\n... (truncated)"
+            }
+          ]
+        },
+        {
+          "name": "OpenAPI Schema",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Documents the embed endpoint\", () => pm.expect(pm.response.json().paths).to.have.property(\"/v1/embed\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/openapi.json",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "openapi.json"
+              ]
+            },
+            "description": "Machine-readable API schema. Needs EMBEDDING_SERVER_ENABLE_API_DOCS=true, otherwise 404.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK (abridged)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/openapi.json",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "openapi.json"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"openapi\": \"3.1.0\",\n  \"info\": {\n    \"title\": \"Embedding Server\",\n    \"description\": \"Multimodal (text, image, text+image) embeddings for retrieval.\",\n    \"version\": \"2.0.0\"\n  },\n  \"paths\": {\n    \"/health/live\": \"...\",\n    \"/health/ready\": \"...\",\n    \"/v1/embed\": \"...\",\n    \"/v1/embed/batch\": \"...\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Single Embedding (/v1/embed)",
+      "description": "One item per call. All successful responses are L2-normalised vectors.",
+      "item": [
+        {
+          "name": "Text - search query",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Embedding has the configured dimension\", () => {",
+                  "  pm.expect(body.dimension).to.eql(Number(pm.collectionVariables.get(\"expectedDimension\")));",
+                  "  pm.expect(body.embedding).to.have.lengthOf(body.dimension);",
+                  "});",
+                  "pm.test(\"Embedding is L2-normalised (length 1)\", () => {",
+                  "  const norm = Math.sqrt(body.embedding.reduce((sum, value) => sum + value * value, 0));",
+                  "  pm.expect(norm).to.be.closeTo(1, 1e-3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Applies the query prompt template: 'task: search result | query: ...'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text\",\n  \"text\": \"How does multimodal semantic search work?\",\n  \"task\": \"query\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK (embedding shortened to 4 of 768 values)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text\",\n  \"text\": \"How does multimodal semantic search work?\",\n  \"task\": \"query\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"model\": \"google/embeddinggemma-2\",\n  \"model_revision\": null,\n  \"dimension\": 768,\n  \"embedding\": [\n    0.0213,\n    -0.0087,\n    0.0341,\n    -0.0129\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Text - document with title",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Embedding has the configured dimension\", () => {",
+                  "  pm.expect(body.dimension).to.eql(Number(pm.collectionVariables.get(\"expectedDimension\")));",
+                  "  pm.expect(body.embedding).to.have.lengthOf(body.dimension);",
+                  "});",
+                  "pm.test(\"Embedding is L2-normalised (length 1)\", () => {",
+                  "  const norm = Math.sqrt(body.embedding.reduce((sum, value) => sum + value * value, 0));",
+                  "  pm.expect(norm).to.be.closeTo(1, 1e-3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Applies 'title: ... | text: ...'. title is only allowed with task=document.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text\",\n  \"text\": \"EmbeddingGemma 2 encodes text and images into a shared vector space.\",\n  \"task\": \"document\",\n  \"title\": \"EmbeddingGemma Overview\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK (embedding shortened to 4 of 768 values)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text\",\n  \"text\": \"EmbeddingGemma 2 encodes text and images into a shared vector space.\",\n  \"task\": \"document\",\n  \"title\": \"EmbeddingGemma Overview\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"model\": \"google/embeddinggemma-2\",\n  \"model_revision\": null,\n  \"dimension\": 768,\n  \"embedding\": [\n    0.0213,\n    -0.0087,\n    0.0341,\n    -0.0129\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Text - document without title",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Embedding has the configured dimension\", () => {",
+                  "  pm.expect(body.dimension).to.eql(Number(pm.collectionVariables.get(\"expectedDimension\")));",
+                  "  pm.expect(body.embedding).to.have.lengthOf(body.dimension);",
+                  "});",
+                  "pm.test(\"Embedding is L2-normalised (length 1)\", () => {",
+                  "  const norm = Math.sqrt(body.embedding.reduce((sum, value) => sum + value * value, 0));",
+                  "  pm.expect(norm).to.be.closeTo(1, 1e-3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Title defaults to 'none' in the prompt template.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text\",\n  \"text\": \"A passage indexed without a title.\",\n  \"task\": \"document\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK (embedding shortened to 4 of 768 values)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text\",\n  \"text\": \"A passage indexed without a title.\",\n  \"task\": \"document\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"model\": \"google/embeddinggemma-2\",\n  \"model_revision\": null,\n  \"dimension\": 768,\n  \"embedding\": [\n    0.0213,\n    -0.0087,\n    0.0341,\n    -0.0129\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Text - raw (task none)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Embedding has the configured dimension\", () => {",
+                  "  pm.expect(body.dimension).to.eql(Number(pm.collectionVariables.get(\"expectedDimension\")));",
+                  "  pm.expect(body.embedding).to.have.lengthOf(body.dimension);",
+                  "});",
+                  "pm.test(\"Embedding is L2-normalised (length 1)\", () => {",
+                  "  const norm = Math.sqrt(body.embedding.reduce((sum, value) => sum + value * value, 0));",
+                  "  pm.expect(norm).to.be.closeTo(1, 1e-3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "No prompt template. task defaults to 'none' when omitted.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text\",\n  \"text\": \"General raw text without a task prefix.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK (embedding shortened to 4 of 768 values)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text\",\n  \"text\": \"General raw text without a task prefix.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"model\": \"google/embeddinggemma-2\",\n  \"model_revision\": null,\n  \"dimension\": 768,\n  \"embedding\": [\n    0.0213,\n    -0.0087,\n    0.0341,\n    -0.0129\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Image - PNG",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Embedding has the configured dimension\", () => {",
+                  "  pm.expect(body.dimension).to.eql(Number(pm.collectionVariables.get(\"expectedDimension\")));",
+                  "  pm.expect(body.embedding).to.have.lengthOf(body.dimension);",
+                  "});",
+                  "pm.test(\"Embedding is L2-normalised (length 1)\", () => {",
+                  "  const norm = Math.sqrt(body.embedding.reduce((sum, value) => sum + value * value, 0));",
+                  "  pm.expect(norm).to.be.closeTo(1, 1e-3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Raw standard Base64 (no 'data:' prefix). JPEG, PNG, or static WEBP; max 5 MiB decoded.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"image\",\n  \"image_base64\": \"iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAOklEQVR4nO3RQREAQAjDwHJC8C8KMSchfPhlBZSZUNOdS+90PR5Y8AfIRMhEyETIRMhEyETIRMhEIR/SgAFY1t5YwgAAAABJRU5ErkJggg==\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK (embedding shortened to 4 of 768 values)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"image\",\n  \"image_base64\": \"iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAOklEQVR4nO3RQREAQAjDwHJC8C8KMSchfPhlBZSZUNOdS+90PR5Y8AfIRMhEyETIRMhEyETIRMhEIR/SgAFY1t5YwgAAAABJRU5ErkJggg==\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"model\": \"google/embeddinggemma-2\",\n  \"model_revision\": null,\n  \"dimension\": 768,\n  \"embedding\": [\n    0.0213,\n    -0.0087,\n    0.0341,\n    -0.0129\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Text + Image (joint)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Embedding has the configured dimension\", () => {",
+                  "  pm.expect(body.dimension).to.eql(Number(pm.collectionVariables.get(\"expectedDimension\")));",
+                  "  pm.expect(body.embedding).to.have.lengthOf(body.dimension);",
+                  "});",
+                  "pm.test(\"Embedding is L2-normalised (length 1)\", () => {",
+                  "  const norm = Math.sqrt(body.embedding.reduce((sum, value) => sum + value * value, 0));",
+                  "  pm.expect(norm).to.be.closeTo(1, 1e-3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Text and image embedded together as one interleaved sequence.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text_image\",\n  \"text\": \"A small solid red square.\",\n  \"image_base64\": \"iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAOklEQVR4nO3RQREAQAjDwHJC8C8KMSchfPhlBZSZUNOdS+90PR5Y8AfIRMhEyETIRMhEyETIRMhEIR/SgAFY1t5YwgAAAABJRU5ErkJggg==\",\n  \"task\": \"document\",\n  \"title\": \"Red Square\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK (embedding shortened to 4 of 768 values)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text_image\",\n  \"text\": \"A small solid red square.\",\n  \"image_base64\": \"iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAOklEQVR4nO3RQREAQAjDwHJC8C8KMSchfPhlBZSZUNOdS+90PR5Y8AfIRMhEyETIRMhEyETIRMhEIR/SgAFY1t5YwgAAAABJRU5ErkJggg==\",\n  \"task\": \"document\",\n  \"title\": \"Red Square\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"model\": \"google/embeddinggemma-2\",\n  \"model_revision\": null,\n  \"dimension\": 768,\n  \"embedding\": [\n    0.0213,\n    -0.0087,\n    0.0341,\n    -0.0129\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Batch Embedding (/v1/embed/batch)",
+      "description": "Up to 64 mixed items per call (EMBEDDING_SERVER_MAX_BATCH_ITEMS). Results are in request order. If any item is invalid, the whole batch is rejected and item_index points at it.",
+      "item": [
+        {
+          "name": "Mixed batch (query, document, image, text+image)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"One embedding per item, in order\", () => {",
+                  "  pm.expect(body.count).to.eql(4);",
+                  "  pm.expect(body.embeddings).to.have.lengthOf(4);",
+                  "  body.embeddings.forEach(vector => pm.expect(vector).to.have.lengthOf(body.dimension));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed/batch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed",
+                "batch"
+              ]
+            },
+            "description": "Heterogeneous items in one call.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"vector retrieval for RAG\",\n      \"task\": \"query\"\n    },\n    {\n      \"type\": \"text\",\n      \"text\": \"Passages are stored in Postgres.\",\n      \"task\": \"document\",\n      \"title\": \"RAG Guide\"\n    },\n    {\n      \"type\": \"image\",\n      \"image_base64\": \"iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAOklEQVR4nO3RQREAQAjDwHJC8C8KMSchfPhlBZSZUNOdS+90PR5Y8AfIRMhEyETIRMhEyETIRMhEIR/SgAFY1t5YwgAAAABJRU5ErkJggg==\"\n    },\n    {\n      \"type\": \"text_image\",\n      \"text\": \"A red square\",\n      \"image_base64\": \"iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAOklEQVR4nO3RQREAQAjDwHJC8C8KMSchfPhlBZSZUNOdS+90PR5Y8AfIRMhEyETIRMhEyETIRMhEIR/SgAFY1t5YwgAAAABJRU5ErkJggg==\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK (each embedding shortened to 4 of 768 values)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed/batch",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed",
+                    "batch"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"items\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"vector retrieval for RAG\",\n      \"task\": \"query\"\n    },\n    {\n      \"type\": \"text\",\n      \"text\": \"Passages are stored in Postgres.\",\n      \"task\": \"document\",\n      \"title\": \"RAG Guide\"\n    },\n    {\n      \"type\": \"image\",\n      \"image_base64\": \"iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAOklEQVR4nO3RQREAQAjDwHJC8C8KMSchfPhlBZSZUNOdS+90PR5Y8AfIRMhEyETIRMhEyETIRMhEIR/SgAFY1t5YwgAAAABJRU5ErkJggg==\"\n    },\n    {\n      \"type\": \"text_image\",\n      \"text\": \"A red square\",\n      \"image_base64\": \"iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAOklEQVR4nO3RQREAQAjDwHJC8C8KMSchfPhlBZSZUNOdS+90PR5Y8AfIRMhEyETIRMhEyETIRMhEIR/SgAFY1t5YwgAAAABJRU5ErkJggg==\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"model\": \"google/embeddinggemma-2\",\n  \"model_revision\": null,\n  \"dimension\": 768,\n  \"count\": 4,\n  \"embeddings\": [\n    [\n      0.0213,\n      -0.0087,\n      0.0341,\n      -0.0129\n    ],\n    [\n      0.0213,\n      -0.0087,\n      0.0341,\n      -0.0129\n    ],\n    [\n      0.0213,\n      -0.0087,\n      0.0341,\n      -0.0129\n    ],\n    [\n      0.0213,\n      -0.0087,\n      0.0341,\n      -0.0129\n    ]\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Errors - Authentication (401)",
+      "description": "Missing and wrong keys get the identical response, so callers cannot probe for valid keys.",
+      "item": [
+        {
+          "name": "Missing API key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: Invalid or missing API key\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"Invalid or missing API key\");",
+                  "});",
+                  "pm.test(\"Has WWW-Authenticate header\", () => pm.response.to.have.header(\"WWW-Authenticate\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "No X-API-Key header.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text\",\n  \"text\": \"hello\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text\",\n  \"text\": \"hello\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "www-authenticate",
+                  "value": "ApiKey"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Invalid or missing API key\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Wrong API key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: Invalid or missing API key\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"Invalid or missing API key\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "definitely-not-the-right-key"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Incorrect X-API-Key value.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text\",\n  \"text\": \"hello\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-API-Key",
+                    "value": "definitely-not-the-right-key"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text\",\n  \"text\": \"hello\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "www-authenticate",
+                  "value": "ApiKey"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Invalid or missing API key\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Errors - Request validation (422)",
+      "description": "Schema errors are returned by FastAPI as a list under detail: each entry has loc (where), msg (what), and type.",
+      "item": [
+        {
+          "name": "Malformed JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: JSON decode error\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"JSON decode error\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Body is not valid JSON.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\": \"text\", \"text\": \"missing closing brace\"",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"type\": \"text\", \"text\": \"missing closing brace\"",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": [\n    {\n      \"type\": \"json_invalid\",\n      \"loc\": [\n        \"body\",\n        48\n      ],\n      \"msg\": \"JSON decode error\",\n      \"input\": {},\n      \"ctx\": {\n        \"error\": \"Expecting ',' delimiter\"\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unknown input type (e.g. video)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: does not match any of the expected tags\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"does not match any of the expected tags\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Only text, image, and text_image are supported.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"video\",\n  \"video_base64\": \"AAAA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"video\",\n  \"video_base64\": \"AAAA\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": [\n    {\n      \"type\": \"union_tag_invalid\",\n      \"loc\": [\n        \"body\"\n      ],\n      \"msg\": \"Input tag 'video' found using 'type' does not match any of the expected tags: 'text', 'image', 'text_image'\",\n      \"input\": {\n        \"type\": \"video\",\n        \"video_base64\": \"AAAA\"\n      },\n      \"ctx\": {\n        \"discriminator\": \"'type'\",\n        \"tag\": \"video\",\n        \"expected_tags\": \"'text', 'image', 'text_image'\"\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Missing type field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: Unable to extract tag using discriminator\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"Unable to extract tag using discriminator\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "type is the discriminator and is always required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"no type\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"text\": \"no type\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": [\n    {\n      \"type\": \"union_tag_not_found\",\n      \"loc\": [\n        \"body\"\n      ],\n      \"msg\": \"Unable to extract tag using discriminator 'type'\",\n      \"input\": {\n        \"text\": \"no type\"\n      },\n      \"ctx\": {\n        \"discriminator\": \"'type'\"\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Missing required field (text_image without image)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: Field required\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"Field required\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "text_image needs both text and image_base64.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text_image\",\n  \"text\": \"caption only\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text_image\",\n  \"text\": \"caption only\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": [\n    {\n      \"type\": \"missing\",\n      \"loc\": [\n        \"body\",\n        \"text_image\",\n        \"image_base64\"\n      ],\n      \"msg\": \"Field required\",\n      \"input\": {\n        \"type\": \"text_image\",\n        \"text\": \"caption only\"\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Invalid task value",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: Input should be 'none', 'query' or 'document'\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"Input should be 'none', 'query' or 'document'\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "task must be none, query, or document.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text\",\n  \"text\": \"hello\",\n  \"task\": \"summarize\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text\",\n  \"text\": \"hello\",\n  \"task\": \"summarize\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": [\n    {\n      \"type\": \"literal_error\",\n      \"loc\": [\n        \"body\",\n        \"text\",\n        \"task\"\n      ],\n      \"msg\": \"Input should be 'none', 'query' or 'document'\",\n      \"input\": \"summarize\",\n      \"ctx\": {\n        \"expected\": \"'none', 'query' or 'document'\"\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Title with non-document task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: title is only supported when task='document'\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"title is only supported when task='document'\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "title is only meaningful in the document template.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text\",\n  \"text\": \"hello\",\n  \"task\": \"query\",\n  \"title\": \"Not allowed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text\",\n  \"text\": \"hello\",\n  \"task\": \"query\",\n  \"title\": \"Not allowed\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": [\n    {\n      \"type\": \"value_error\",\n      \"loc\": [\n        \"body\",\n        \"text\"\n      ],\n      \"msg\": \"Value error, title is only supported when task='document'\",\n      \"input\": {\n        \"type\": \"text\",\n        \"text\": \"hello\",\n        \"task\": \"query\",\n        \"title\": \"Not allowed\"\n      },\n      \"ctx\": {\n        \"error\": {}\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Empty / whitespace-only text",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: at least 1 character\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"at least 1 character\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Whitespace is trimmed, leaving an empty string.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text\",\n  \"text\": \"   \"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text\",\n  \"text\": \"   \"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": [\n    {\n      \"type\": \"string_too_short\",\n      \"loc\": [\n        \"body\",\n        \"text\",\n        \"text\"\n      ],\n      \"msg\": \"String should have at least 1 character\",\n      \"input\": \"   \",\n      \"ctx\": {\n        \"min_length\": 1\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reserved marker injection (<|image|>)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: reserved multimodal markers\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"reserved multimodal markers\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Special media tokens in text are rejected to prevent prompt injection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text\",\n  \"text\": \"Injection attempt <|image|> hidden\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text\",\n  \"text\": \"Injection attempt <|image|> hidden\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": [\n    {\n      \"type\": \"value_error\",\n      \"loc\": [\n        \"body\",\n        \"text\",\n        \"text\"\n      ],\n      \"msg\": \"Value error, text must not contain reserved multimodal markers\",\n      \"input\": \"Injection attempt <|image|> hidden\",\n      \"ctx\": {\n        \"error\": {}\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "NUL character in text",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: NUL characters\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"NUL characters\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "\\u0000 is rejected to protect downstream storage.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text\",\n  \"text\": \"nul\\u0000byte\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text\",\n  \"text\": \"nul\\u0000byte\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": [\n    {\n      \"type\": \"value_error\",\n      \"loc\": [\n        \"body\",\n        \"text\",\n        \"text\"\n      ],\n      \"msg\": \"Value error, text must not contain NUL characters\",\n      \"input\": \"nul\\u0000byte\",\n      \"ctx\": {\n        \"error\": {}\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unexpected extra field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: Extra inputs are not permitted\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"Extra inputs are not permitted\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Unknown fields are rejected (e.g. attempts to pass a server-side path).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text\",\n  \"text\": \"hello\",\n  \"local_path\": \"/etc/passwd\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text\",\n  \"text\": \"hello\",\n  \"local_path\": \"/etc/passwd\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": [\n    {\n      \"type\": \"extra_forbidden\",\n      \"loc\": [\n        \"body\",\n        \"text\",\n        \"local_path\"\n      ],\n      \"msg\": \"Extra inputs are not permitted\",\n      \"input\": \"/etc/passwd\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Errors - Image validation (422)",
+      "description": "Image errors are returned as a plain string detail; batch requests also include item_index.",
+      "item": [
+        {
+          "name": "Not Base64",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: image_base64 must be valid standard Base64\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"image_base64 must be valid standard Base64\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Characters outside the standard Base64 alphabet.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"image\",\n  \"image_base64\": \"this-is-not-base64!!!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"image\",\n  \"image_base64\": \"this-is-not-base64!!!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"image_base64 must be valid standard Base64\",\n  \"item_index\": 0\n}"
+            }
+          ]
+        },
+        {
+          "name": "Data URI prefix included",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: image_base64 must be valid standard Base64\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"image_base64 must be valid standard Base64\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Send raw Base64 only; strip 'data:image/png;base64,'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"image\",\n  \"image_base64\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAOklEQVR4nO3RQREAQAjDwHJC8C8KMSchfPhlBZSZUNOdS+90PR5Y8AfIRMhEyETIRMhEyETIRMhEIR/SgAFY1t5YwgAAAABJRU5ErkJggg==\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"image\",\n  \"image_base64\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAOklEQVR4nO3RQREAQAjDwHJC8C8KMSchfPhlBZSZUNOdS+90PR5Y8AfIRMhEyETIRMhEyETIRMhEIR/SgAFY1t5YwgAAAABJRU5ErkJggg==\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"image_base64 must be valid standard Base64\",\n  \"item_index\": 0\n}"
+            }
+          ]
+        },
+        {
+          "name": "Valid Base64 but not an image",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: Image could not be decoded safely\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"Image could not be decoded safely\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Decodes to plain text bytes.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"image\",\n  \"image_base64\": \"dGhpcyBpcyBwbGFpbiB0ZXh0LCBub3QgYW4gaW1hZ2U=\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"image\",\n  \"image_base64\": \"dGhpcyBpcyBwbGFpbiB0ZXh0LCBub3QgYW4gaW1hZ2U=\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Image could not be decoded safely\",\n  \"item_index\": 0\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unsupported format (GIF)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: Only JPEG, PNG, and WEBP images are supported\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"Only JPEG, PNG, and WEBP images are supported\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Only JPEG, PNG, and static WEBP are accepted.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"image\",\n  \"image_base64\": \"R0lGODdhIAAgAIEAANweHgAAAAAAAAAAACwAAAAAIAAgAEAINQABCBxIsKDBgwgTKlzIsKHDhxAjSpxIsaLFixgzatzIsaPHjyBDihxJsqTJkyhTqlzJUmRAADs=\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"image\",\n  \"image_base64\": \"R0lGODdhIAAgAIEAANweHgAAAAAAAAAAACwAAAAAIAAgAEAINQABCBxIsKDBgwgTKlzIsKHDhxAjSpxIsaLFixgzatzIsaPHjyBDihxJsqTJkyhTqlzJUmRAADs=\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Only JPEG, PNG, and WEBP images are supported\",\n  \"item_index\": 0\n}"
+            }
+          ]
+        },
+        {
+          "name": "Image string too short",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: at least 16 characters\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"at least 16 characters\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Fewer than 16 Base64 characters is rejected by the schema.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"image\",\n  \"image_base64\": \"AAAA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"image\",\n  \"image_base64\": \"AAAA\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": [\n    {\n      \"type\": \"string_too_short\",\n      \"loc\": [\n        \"body\",\n        \"image\",\n        \"image_base64\"\n      ],\n      \"msg\": \"String should have at least 16 characters\",\n      \"input\": \"AAAA\",\n      \"ctx\": {\n        \"min_length\": 16\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Bad image inside a batch (item_index)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: Image could not be decoded safely\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"Image could not be decoded safely\");",
+                  "});",
+                  "pm.test(\"item_index points at the bad item\", () => pm.expect(pm.response.json().item_index).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed/batch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed",
+                "batch"
+              ]
+            },
+            "description": "The whole batch is rejected; item_index tells you which item to fix.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"valid item\"\n    },\n    {\n      \"type\": \"image\",\n      \"image_base64\": \"bm90IGFuIGltYWdlIGF0IGFsbCEh\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed/batch",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed",
+                    "batch"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"items\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"valid item\"\n    },\n    {\n      \"type\": \"image\",\n      \"image_base64\": \"bm90IGFuIGltYWdlIGF0IGFsbCEh\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Image could not be decoded safely\",\n  \"item_index\": 1\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Errors - Size limits (413 / 422)",
+      "description": "Large payloads are generated by pre-request scripts so the collection file stays small.",
+      "item": [
+        {
+          "name": "Text over character limit",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"characterOverflowText\", \"a\".repeat(24001));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: at most 24000 characters\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"at most 24000 characters\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "24,001 characters; limit is EMBEDDING_SERVER_MAX_TEXT_CHARACTERS (24,000).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\": \"text\", \"text\": \"{{characterOverflowText}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"type\": \"text\", \"text\": \"{{characterOverflowText}}\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": [\n    {\n      \"type\": \"string_too_long\",\n      \"loc\": [\n        \"body\",\n        \"text\",\n        \"text\"\n      ],\n      \"msg\": \"String should have at most 24000 characters\",\n      \"input\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa... (truncated)\",\n      \"ctx\": {\n        \"max_length\": 24000\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Text over token limit",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"tokenOverflowText\", Array(12000).fill(\"a\").join(\" \"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: the maximum is\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"the maximum is\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "~12,000 tokens; limit is EMBEDDING_SERVER_MAX_TEXT_TOKENS (7,800). Text is rejected, never silently truncated.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\": \"text\", \"text\": \"{{tokenOverflowText}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"type\": \"text\", \"text\": \"{{tokenOverflowText}}\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Text uses 12000 tokens; the maximum is 7800. Split long content into smaller chunks.\",\n  \"item_index\": 0\n}"
+            }
+          ]
+        },
+        {
+          "name": "Empty batch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: at least 1 item\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"at least 1 item\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed/batch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed",
+                "batch"
+              ]
+            },
+            "description": "A batch needs at least one item.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed/batch",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed",
+                    "batch"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"items\": []\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": [\n    {\n      \"type\": \"too_short\",\n      \"loc\": [\n        \"body\",\n        \"items\"\n      ],\n      \"msg\": \"List should have at least 1 item after validation, not 0\",\n      \"input\": [],\n      \"ctx\": {\n        \"field_type\": \"List\",\n        \"min_length\": 1,\n        \"actual_length\": 0\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Batch over item limit (65 items)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"tooManyItems\", JSON.stringify(Array.from({length: 65}, (_, i) => ({type: \"text\", text: \"item \" + i}))));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: at most 64 items\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"at most 64 items\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed/batch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed",
+                "batch"
+              ]
+            },
+            "description": "Limit is EMBEDDING_SERVER_MAX_BATCH_ITEMS (64).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"items\": {{tooManyItems}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed/batch",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed",
+                    "batch"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"items\": {{tooManyItems}}}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": [\n    {\n      \"type\": \"too_long\",\n      \"loc\": [\n        \"body\",\n        \"items\"\n      ],\n      \"msg\": \"List should have at most 64 items after validation, not 65\",\n      \"input\": \"... (truncated)\",\n      \"ctx\": {\n        \"field_type\": \"List\",\n        \"max_length\": 64,\n        \"actual_length\": 65\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Request body over 16 MiB",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"oversizedBody\", JSON.stringify({type: \"text\", text: \"a\".repeat(17 * 1024 * 1024)}));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 413\", () => pm.response.to.have.status(413));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: Request body too large\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"Request body too large\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Rejected before the body is parsed; limit is EMBEDDING_SERVER_MAX_REQUEST_BODY_BYTES.",
+            "body": {
+              "mode": "raw",
+              "raw": "{{oversizedBody}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "413 Content Too Large",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{{oversizedBody}}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Content Too Large",
+              "code": 413,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Request body too large\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8. Errors - Routing (404 / 405)",
+      "description": "",
+      "item": [
+        {
+          "name": "Wrong HTTP method",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 405\", () => pm.response.to.have.status(405));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: Method Not Allowed\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"Method Not Allowed\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/embed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "embed"
+              ]
+            },
+            "description": "Embedding endpoints only accept POST."
+          },
+          "response": [
+            {
+              "name": "405 Method Not Allowed",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/embed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "embed"
+                  ]
+                }
+              },
+              "status": "Method Not Allowed",
+              "code": 405,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Method Not Allowed\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unknown endpoint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Response carries an X-Request-ID\", () => pm.response.to.have.header(\"X-Request-ID\"));",
+                  "pm.test(\"Error detail mentions: Not Found\", () => {",
+                  "  const detail = pm.response.json().detail;",
+                  "  const text = typeof detail === \"string\" ? detail : JSON.stringify(detail);",
+                  "  pm.expect(text).to.include(\"Not Found\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/does-not-exist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "does-not-exist"
+              ]
+            },
+            "description": "Unknown paths return 404.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"text\",\n  \"text\": \"hello\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/does-not-exist",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "does-not-exist"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"text\",\n  \"text\": \"hello\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Not Found\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

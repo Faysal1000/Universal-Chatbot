@@ -1,0 +1,38 @@
+/* A deliberately opinionated host page: the widget must look the same whatever the site's CSS does. */
+* {
+  box-sizing: content-box;
+}
+
+html {
+  font:
+    18px/2 Georgia,
+    'Times New Roman',
+    serif;
+  color: #3b2f2f;
+  background: #f4efe6;
+}
+
+button {
+  font: inherit;
+  color: red;
+  background: yellow;
+  border: 4px dashed purple;
+}
+
+div,
+span,
+section,
+p {
+  letter-spacing: 0.08em;
+}
+
+.site {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 30rem;
+}
+
+.site h1 {
+  font-size: 2.4rem;
+  line-height: 1.2;
+}

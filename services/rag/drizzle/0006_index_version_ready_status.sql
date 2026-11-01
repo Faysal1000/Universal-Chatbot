@@ -1,0 +1,2 @@
+ALTER TABLE "index_versions" DROP CONSTRAINT "index_versions_status_is_known";--> statement-breakpoint
+ALTER TABLE "index_versions" ADD CONSTRAINT "index_versions_status_is_known" CHECK (status IN ('building', 'ready', 'live', 'retired', 'failed'));

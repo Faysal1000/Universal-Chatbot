@@ -1,0 +1,43 @@
+# Local CPU-only run of the embedding server.
+#   docker compose up --build        # first start downloads the model (several minutes)
+#   curl http://localhost:8000/health/ready
+#
+# Secrets and tuning come from .env (EMBEDDING_SERVER_* variables); the values under
+# `environment:` override .env for container-specific concerns only.
+name: embedding-server
+
+services:
+  embedding-server:
+    build:
+      context: .
+      args:
+        INFERENCE_DEVICE: cpu
+    image: embedding-server:cpu
+    env_file: .env
+    environment:
+      EMBEDDING_SERVER_DEVICE: cpu
+      EMBEDDING_SERVER_HOST: 0.0.0.0
+      EMBEDDING_SERVER_PORT: "8000"
+    ports:
+      - "${EMBEDDING_SERVER_HOST_PORT:-8000}:8000"
+    volumes:
+      # Persist downloaded model weights across restarts and rebuilds.
+      - huggingface-cache:/var/cache/huggingface
+    # Same hardening as production: immutable filesystem, no privileges.
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 7g
+    # Must exceed 2x EMBEDDING_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT_SECONDS (HTTP drain + worker drain).
+    stop_grace_period: 4m
+    restart: unless-stopped
+
+volumes:
+  huggingface-cache:

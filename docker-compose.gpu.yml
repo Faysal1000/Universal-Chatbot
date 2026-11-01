@@ -1,0 +1,32 @@
+# ==============================================================================
+#  NVIDIA GPU hosts only: builds the CUDA images of the model servers and gives them the GPUs.
+#
+#    make up-gpu      # = docker compose --env-file platform.env -f docker-compose.yml -f docker-compose.gpu.yml up ...
+#
+#  Needs the NVIDIA driver and the NVIDIA Container Toolkit on the host.
+# ==============================================================================
+x-all-gpus: &all-gpus
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+
+services:
+  embedding-server:
+    <<: *all-gpus
+    build:
+      args:
+        INFERENCE_DEVICE: cuda
+    image: embedding-server:cuda
+    environment:
+      EMBEDDING_SERVER_DEVICE: cuda
+
+  local-llm:
+    <<: *all-gpus
+    build:
+      args:
+        INFERENCE_DEVICE: cuda
+    image: local-llm:cuda

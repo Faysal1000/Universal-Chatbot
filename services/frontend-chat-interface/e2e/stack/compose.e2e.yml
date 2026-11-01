@@ -1,0 +1,20 @@
+# Overlay for the root docker-compose.yml used by the chat frontend's end-to-end tests:
+#
+#   docker compose --env-file platform.env -f docker-compose.yml \
+#     -f services/frontend-chat-interface/e2e/stack/compose.e2e.yml up -d --wait
+#
+# It only changes rag-api's public-access settings:
+# - Cloudflare's official Turnstile test keys (always pass, https://developers.cloudflare.com/turnstile/troubleshooting/testing/),
+#   so the real Turnstile flow runs without a Cloudflare account. Never use them in production.
+# - CORS origins of the chat frontend in development (5190), e2e (5290) and its Docker image (8088).
+# - Higher per-IP and per-fingerprint limits: every test opens a fresh browser (a new visitor session) from the
+#   same IP with the same fingerprint. The per-session turn limit stays as in production; a test checks it.
+services:
+  rag-api:
+    environment:
+      RAG_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+      RAG_TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+      RAG_PUBLIC_CORS_ALLOWED_ORIGINS: http://localhost:5190,http://localhost:5290,http://localhost:8088
+      RAG_RATE_LIMIT_SESSIONS_PER_HOUR_PER_IP: '1000'
+      RAG_RATE_LIMIT_TURNS_PER_MINUTE_PER_IP: '300'
+      RAG_RATE_LIMIT_TURNS_PER_MINUTE_PER_FINGERPRINT: '300'

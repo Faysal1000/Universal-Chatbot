@@ -1,0 +1,1 @@
+ALTER TABLE "chatbot_settings_versions" ADD COLUMN "note" text;

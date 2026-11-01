@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://universal-chatbot.local/contracts/block-manifest-record.v1.schema.json",
+  "title": "BlockManifestRecord",
+  "description": "One line of a parse.pages manifest (JSON Lines). A normalised content block with full provenance. Section paths are computed later by rag across pages from `headingLevel`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "blockId",
+    "pageNumber",
+    "blockType",
+    "readingOrder",
+    "text",
+    "markdown",
+    "latex",
+    "bbox",
+    "headingLevel",
+    "extractionMethod",
+    "confidence",
+    "cropKey",
+    "language"
+  ],
+  "properties": {
+    "blockId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUIDv5 of (ingestionRunId, pageNumber, readingOrder), so a retried batch yields the same IDs."
+    },
+    "pageNumber": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "blockType": {
+      "enum": [
+        "heading",
+        "paragraph",
+        "list",
+        "table",
+        "formula",
+        "figure",
+        "chart",
+        "caption",
+        "page_header",
+        "page_footer"
+      ]
+    },
+    "readingOrder": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Position of the block within its page."
+    },
+    "text": {
+      "type": ["string", "null"],
+      "maxLength": 100000,
+      "description": "Plain text (for tables: a linearised fallback)."
+    },
+    "markdown": {
+      "type": ["string", "null"],
+      "maxLength": 200000,
+      "description": "Tables as GitHub-flavoured Markdown; for other blocks, the block's Markdown when the extractor produced any."
+    },
+    "latex": {
+      "type": ["string", "null"],
+      "maxLength": 20000,
+      "description": "Formulas as LaTeX."
+    },
+    "bbox": {
+      "title": "NormalisedBoundingBox",
+      "description": "Page-relative box, normalised to 0..1 with the origin at the top-left corner.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x0", "y0", "x1", "y1"],
+      "properties": {
+        "x0": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "y0": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "x1": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "y1": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "headingLevel": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "maximum": 6,
+      "description": "Set only for headings."
+    },
+    "extractionMethod": {
+      "type": "string",
+      "pattern": "^(native|ocr_tesseract|vlm:(document_parse|table_extraction|equation_ocr|chart_description))$",
+      "description": "`native` (digital text layer), `ocr_tesseract` (fallback OCR when the vision model is unavailable or over budget), or `vlm:<gateway task>`."
+    },
+    "confidence": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "cropKey": {
+      "type": ["string", "null"],
+      "description": "Object key of the cropped region image (tables, charts, figures, formulas)."
+    },
+    "language": {
+      "type": ["string", "null"],
+      "description": "BCP 47 tag, e.g. `en` or `bn`."
+    }
+  },
+  "examples": [
+    {
+      "blockId": "5df5cdf2-3c3b-5c1a-9f2e-6a1d6c0b8e11",
+      "pageNumber": 1,
+      "blockType": "table",
+      "readingOrder": 4,
+      "text": "Plan | Monthly price\nStarter | $19\nBusiness | $49",
+      "markdown": "| Plan | Monthly price |\n| --- | --- |\n| Starter | $19 |\n| Business | $49 |",
+      "latex": null,
+      "bbox": {
+        "x0": 0.08,
+        "y0": 0.41,
+        "x1": 0.92,
+        "y1": 0.58
+      },
+      "headingLevel": null,
+      "extractionMethod": "vlm:table_extraction",
+      "confidence": 0.94,
+      "cropKey": "documents/0f8fad5b-d9cb-469f-a165-70867728950e/runs/7c9e6679-7425-40de-944b-e07fc1f90ae7/crops/5df5cdf2-3c3b-5c1a-9f2e-6a1d6c0b8e11.png",
+      "language": "en"
+    }
+  ]
+}

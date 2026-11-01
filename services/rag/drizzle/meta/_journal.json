@@ -1,0 +1,118 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1793211087116,
+      "tag": "0000_initial_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793297710924,
+      "tag": "0001_chat_and_memory",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793303285279,
+      "tag": "0002_heading_level_and_min_similarity",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793303285628,
+      "tag": "0003_drop_rerank_threshold",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793304026205,
+      "tag": "0004_seed_chatbot_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793305813976,
+      "tag": "0005_calibrated_min_similarity",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793307149093,
+      "tag": "0006_index_version_ready_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793307558782,
+      "tag": "0007_evaluation",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793334366283,
+      "tag": "0008_show_sources",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793368352640,
+      "tag": "0009_settings_version_note",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793368486078,
+      "tag": "0010_audit_actor_username",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793385039419,
+      "tag": "0011_widget_keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793443290815,
+      "tag": "0012_drop_trace_ids",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793451489749,
+      "tag": "0013_drop_evaluation",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793479009251,
+      "tag": "0014_chatbot_max_message_chars",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1793502389298,
+      "tag": "0015_pgvector_search",
+      "breakpoints": true
+    }
+  ]
+}

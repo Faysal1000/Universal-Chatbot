@@ -1,0 +1,137 @@
+# Isolated local run of rag with its own infrastructure.
+#   cp .env.example .env   # then set every secret
+#   docker compose up --build
+#   curl http://localhost:8080/health/ready
+#
+# For the whole platform use the docker-compose.yml
+# at the repository root instead. Values under `environment:` override .env
+# for container-specific concerns only (hostnames, credentials).
+name: rag
+
+x-rag-service: &rag-service
+  build:
+    context: .
+  image: rag:local
+  env_file:
+    - path: ./.env
+      required: false
+  environment: &rag-environment
+    RAG_DATABASE_URL: postgresql://rag:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/rag
+    RAG_REDIS_URL: redis://redis:6379/0
+    RAG_S3_ENDPOINT: http://object-storage:9000
+    RAG_S3_BUCKET: rag
+    RAG_S3_ACCESS_KEY_ID: ${OBJECT_STORAGE_ROOT_USER:?set OBJECT_STORAGE_ROOT_USER in .env}
+    RAG_S3_SECRET_ACCESS_KEY: ${OBJECT_STORAGE_ROOT_PASSWORD:?set OBJECT_STORAGE_ROOT_PASSWORD in .env}
+    RAG_HOST: 0.0.0.0
+    RAG_PORT: '8080'
+    # embedding-server and llm-gateway are not part of this stack; reach them on the host.
+    RAG_EMBEDDING_SERVER_URL: http://host.docker.internal:8000
+    RAG_LLM_GATEWAY_URL: http://host.docker.internal:4000
+  extra_hosts:
+    - 'host.docker.internal:host-gateway'
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  restart: unless-stopped
+  # Must exceed RAG_GRACEFUL_SHUTDOWN_TIMEOUT_SECONDS.
+  stop_grace_period: 45s
+
+services:
+  postgres:
+    # Postgres with the pgvector extension; the search index lives here.
+    image: pgvector/pgvector:pg18
+    environment:
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: rag
+    ports:
+      - '127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready --username rag --dbname rag']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    # BullMQ needs noeviction; appendonly keeps queued jobs across restarts.
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
+    ports:
+      - '127.0.0.1:${REDIS_HOST_PORT:-6379}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  object-storage:
+    # Official minio/minio images are no longer published; Chainguard maintains a free build.
+    image: cgr.dev/chainguard/minio:latest@sha256:e70b2b1e74d79457f808710483bd726ff364529ca30736eaa15a6ab547d3a5a7
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: ${OBJECT_STORAGE_ROOT_USER:?set OBJECT_STORAGE_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${OBJECT_STORAGE_ROOT_PASSWORD:?set OBJECT_STORAGE_ROOT_PASSWORD in .env}
+    ports:
+      - '127.0.0.1:${OBJECT_STORAGE_HOST_PORT:-9000}:9000'
+      - '127.0.0.1:${OBJECT_STORAGE_CONSOLE_HOST_PORT:-9001}:9001'
+    volumes:
+      - object-storage-data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  object-storage-init:
+    image: cgr.dev/chainguard/minio-client:latest@sha256:799a60aa839c0d79b53f1dccdddc974d0fe94282cca712fbfbad3b196f88d0ee
+    command: ['mb', '--ignore-existing', 'local/rag']
+    environment:
+      MC_HOST_local: http://${OBJECT_STORAGE_ROOT_USER}:${OBJECT_STORAGE_ROOT_PASSWORD}@object-storage:9000
+    depends_on:
+      object-storage:
+        condition: service_healthy
+    restart: 'no'
+
+  rag-migrate:
+    <<: *rag-service
+    command: ['node', '--enable-source-maps', 'dist/database/run-migrations.js']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  rag-api:
+    <<: *rag-service
+    command: ['node', '--enable-source-maps', 'dist/main.api.js']
+    ports:
+      - '127.0.0.1:${RAG_API_HOST_PORT:-8080}:8080'
+    depends_on: &rag-dependencies
+      rag-migrate:
+        condition: service_completed_successfully
+      object-storage-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  rag-worker:
+    <<: *rag-service
+    command: ['node', '--enable-source-maps', 'dist/main.worker.js']
+    ports:
+      - '127.0.0.1:${RAG_WORKER_HOST_PORT:-8081}:8080'
+    depends_on: *rag-dependencies
+
+volumes:
+  postgres-data:
+  redis-data:
+  object-storage-data:

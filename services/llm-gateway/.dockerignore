@@ -1,0 +1,25 @@
+**/__pycache__
+**/*.py[cod]
+.env
+.env.*
+!.env.example
+.venv
+venv/
+tests/
+!tests/__init__.py
+!tests/fake_provider.py
+.git
+.gitignore
+.pytest_cache
+.mypy_cache
+.ruff_cache
+requirements-dev.txt
+pyproject.toml
+# Service files the image never needs.
+docker/
+scripts/
+docker-compose*.yml
+postman_collection.json
+README.md
+Dockerfile
+.dockerignore

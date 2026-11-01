@@ -1,0 +1,32 @@
+name: admin-console
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - services/admin-console/**
+      - .github/workflows/admin-console.yml
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Typecheck, lint, format, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/admin-console
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: services/admin-console/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build

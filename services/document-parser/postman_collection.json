@@ -1,0 +1,148 @@
+{
+  "info": {
+    "name": "document-parser health",
+    "_postman_id": "6b0e2c1a-4f8d-4c3e-9a51-2d7e8f1b3c40",
+    "description": "Health probes of the document-parser worker. The parser has no business HTTP API: it consumes the BullMQ queues parse.inspect and parse.pages (see services/rag/contracts).\n\nSetup: start the service (`docker compose up` in services/document-parser, or the root compose) and set `baseUrl` (default http://localhost:8090).\n\nRun: `postman collection run services/document-parser/postman_collection.json` (or `npx newman run ...`).\n\nReadiness returns 503 with per-check status (`ok`, `error`, `timeout`, `stopped`) when Redis or object storage is unreachable or the workers are shutting down; the readiness request accepts both codes but checks the body shape, and asserts 200 only when `expectReady` is `true`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8090"
+    },
+    {
+      "key": "expectReady",
+      "value": "true"
+    }
+  ],
+  "item": [
+    {
+      "name": "Liveness",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('body reports ok', () => pm.expect(pm.response.json()).to.eql({ status: 'ok' }));",
+              "pm.test('answers quickly', () => pm.expect(pm.response.responseTime).to.be.below(1000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health/live",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health",
+            "live"
+          ]
+        },
+        "description": "Process is up. Never depends on Redis or object storage."
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/live",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "live"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"status\": \"ok\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Readiness",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('status is 200 or 503', () => pm.expect(pm.response.code).to.be.oneOf([200, 503]));",
+              "pm.test('reports every check', () => pm.expect(body.checks).to.have.all.keys('redis', 'object_storage', 'workers'));",
+              "pm.test('status matches the checks', () => {",
+              "  const allOk = Object.values(body.checks).every((value) => value === 'ok');",
+              "  pm.expect(body.status).to.eql(allOk ? 'ok' : 'unavailable');",
+              "  pm.expect(pm.response.code).to.eql(allOk ? 200 : 503);",
+              "});",
+              "if (pm.collectionVariables.get('expectReady') === 'true') {",
+              "  pm.test('service is ready', () => pm.response.to.have.status(200));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health/ready",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health",
+            "ready"
+          ]
+        },
+        "description": "Ready to take jobs: Redis PING and S3 HeadBucket succeed within DOCUMENT_PARSER_READINESS_TIMEOUT_SECONDS and the workers are running."
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/ready",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "ready"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"status\": \"ok\",\n  \"checks\": {\n    \"redis\": \"ok\",\n    \"object_storage\": \"ok\",\n    \"workers\": \"ok\"\n  }\n}"
+        }
+      ]
+    }
+  ]
+}
