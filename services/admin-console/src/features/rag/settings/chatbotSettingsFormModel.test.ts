@@ -18,6 +18,7 @@ function someEditableSettings(overrides: Partial<ChatbotSettings> = {}): Chatbot
     suggestedPrompts: ['How many leave days do I have?'],
     systemInstruction: 'Answer briefly and politely.',
     fallbackMessage: 'I could not find that in the documents.',
+    answerOnlyFromDocuments: true,
     answerTemperature: 0.2,
     maxAnswerTokens: 1024,
     maxSources: 6,

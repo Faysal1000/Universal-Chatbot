@@ -10,6 +10,7 @@ function aVersion(version: number, overrides: Partial<ChatbotSettingsVersion> = 
     suggestedPrompts: [],
     systemInstruction: 'Answer briefly.',
     fallbackMessage: 'Not found.',
+    answerOnlyFromDocuments: true,
     answerTemperature: 0.2,
     maxAnswerTokens: 1024,
     maxSources: 6,

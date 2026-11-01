@@ -117,6 +117,7 @@ function presentSettings(settings: ChatbotSettingsRecord): ChatbotSettingsView {
     suggestedPrompts: settings.suggestedPrompts,
     systemInstruction: settings.systemInstruction,
     fallbackMessage: settings.fallbackMessage,
+    answerOnlyFromDocuments: settings.answerOnlyFromDocuments,
     answerTemperature: settings.answerTemperature,
     maxAnswerTokens: settings.maxAnswerTokens,
     maxSources: settings.maxSources,

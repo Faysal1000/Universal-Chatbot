@@ -10,6 +10,9 @@ export const chatbotSettingsInputSchema = z.object({
   suggestedPrompts: z.array(z.string().trim().min(1).max(200)).max(6),
   systemInstruction: z.string().trim().min(1).max(8_000),
   fallbackMessage: z.string().trim().min(1).max(1_000),
+  answerOnlyFromDocuments: z
+    .boolean()
+    .describe('Send the fallback message when no document matches; off lets the model answer anyway'),
   answerTemperature: z.number().min(0).max(2),
   maxAnswerTokens: z.number().int().min(64).max(32_768),
   maxSources: z.number().int().min(1).max(20),

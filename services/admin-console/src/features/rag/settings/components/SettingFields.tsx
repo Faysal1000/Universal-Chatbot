@@ -80,7 +80,7 @@ export function SettingSwitch({
   name,
   values,
   onChange,
-}: Omit<SettingFieldProps<'showReasoning' | 'showSources'>, 'fieldErrors'>) {
+}: Omit<SettingFieldProps<'answerOnlyFromDocuments' | 'showReasoning' | 'showSources'>, 'fieldErrors'>) {
   const hint = useHint();
   return (
     <div className="flex flex-col gap-1">

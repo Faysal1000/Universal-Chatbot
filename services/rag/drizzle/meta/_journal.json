@@ -113,6 +113,13 @@
       "when": 1793502389298,
       "tag": "0015_pgvector_search",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793542455346,
+      "tag": "0016_chatbot_answer_only_from_documents",
+      "breakpoints": true
     }
   ]
 }

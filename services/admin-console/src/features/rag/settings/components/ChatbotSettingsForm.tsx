@@ -76,6 +76,7 @@ export function ChatbotSettingsForm({ activeSettings }: { activeSettings: Chatbo
       <SettingsSection title="Answer behaviour">
         <TextSettingField name="systemInstruction" isMultiline {...fieldProps} />
         <TextSettingField name="fallbackMessage" isMultiline {...fieldProps} />
+        <SettingSwitch name="answerOnlyFromDocuments" values={values} onChange={change} />
         <div className="grid gap-4 md:grid-cols-3">
           <NumericSettingField name="answerTemperature" {...fieldProps} />
           <NumericSettingField name="maxAnswerTokens" {...fieldProps} />

@@ -1,0 +1,1 @@
+ALTER TABLE "chatbot_settings_versions" ADD COLUMN "answer_only_from_documents" boolean DEFAULT true NOT NULL;

@@ -2135,6 +2135,10 @@
                       "minLength": 1,
                       "maxLength": 1000
                     },
+                    "answerOnlyFromDocuments": {
+                      "type": "boolean",
+                      "description": "Send the fallback message when no document matches; off lets the model answer anyway"
+                    },
                     "answerTemperature": {
                       "type": "number",
                       "minimum": 0,
@@ -2225,6 +2229,7 @@
                     "suggestedPrompts",
                     "systemInstruction",
                     "fallbackMessage",
+                    "answerOnlyFromDocuments",
                     "answerTemperature",
                     "maxAnswerTokens",
                     "maxSources",
@@ -2298,6 +2303,10 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 1000
+                  },
+                  "answerOnlyFromDocuments": {
+                    "type": "boolean",
+                    "description": "Send the fallback message when no document matches; off lets the model answer anyway"
                   },
                   "answerTemperature": {
                     "type": "number",
@@ -2373,6 +2382,7 @@
                   "suggestedPrompts",
                   "systemInstruction",
                   "fallbackMessage",
+                  "answerOnlyFromDocuments",
                   "answerTemperature",
                   "maxAnswerTokens",
                   "maxSources",
@@ -2425,6 +2435,10 @@
                       "type": "string",
                       "minLength": 1,
                       "maxLength": 1000
+                    },
+                    "answerOnlyFromDocuments": {
+                      "type": "boolean",
+                      "description": "Send the fallback message when no document matches; off lets the model answer anyway"
                     },
                     "answerTemperature": {
                       "type": "number",
@@ -2516,6 +2530,7 @@
                     "suggestedPrompts",
                     "systemInstruction",
                     "fallbackMessage",
+                    "answerOnlyFromDocuments",
                     "answerTemperature",
                     "maxAnswerTokens",
                     "maxSources",
@@ -2593,6 +2608,10 @@
                         "type": "string",
                         "minLength": 1,
                         "maxLength": 1000
+                      },
+                      "answerOnlyFromDocuments": {
+                        "type": "boolean",
+                        "description": "Send the fallback message when no document matches; off lets the model answer anyway"
                       },
                       "answerTemperature": {
                         "type": "number",
@@ -2684,6 +2703,7 @@
                       "suggestedPrompts",
                       "systemInstruction",
                       "fallbackMessage",
+                      "answerOnlyFromDocuments",
                       "answerTemperature",
                       "maxAnswerTokens",
                       "maxSources",
@@ -2769,6 +2789,10 @@
                       "type": "string",
                       "minLength": 1,
                       "maxLength": 1000
+                    },
+                    "answerOnlyFromDocuments": {
+                      "type": "boolean",
+                      "description": "Send the fallback message when no document matches; off lets the model answer anyway"
                     },
                     "answerTemperature": {
                       "type": "number",
@@ -2860,6 +2884,7 @@
                     "suggestedPrompts",
                     "systemInstruction",
                     "fallbackMessage",
+                    "answerOnlyFromDocuments",
                     "answerTemperature",
                     "maxAnswerTokens",
                     "maxSources",

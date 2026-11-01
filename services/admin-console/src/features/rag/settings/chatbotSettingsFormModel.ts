@@ -30,6 +30,7 @@ type NumericSettingName =
 /** Editable values: numbers stay text while typing, prompts are one input each. */
 export type ChatbotSettingsFormValues = Record<TextSettingName | NumericSettingName, string> & {
   suggestedPrompts: string[];
+  answerOnlyFromDocuments: boolean;
   showReasoning: boolean;
   showSources: boolean;
   reasoningEffort: ReasoningEffort;
@@ -71,6 +72,7 @@ export const SETTING_LABELS: Record<SettingName, string> = {
   suggestedPrompts: 'Suggested prompts',
   systemInstruction: 'System instruction',
   fallbackMessage: 'Fallback message',
+  answerOnlyFromDocuments: 'Answer only from documents',
   answerTemperature: 'Answer temperature',
   maxAnswerTokens: 'Maximum answer tokens',
   maxSources: 'Maximum sources',
@@ -91,6 +93,7 @@ const SETTING_ORDER: readonly SettingName[] = [
   'suggestedPrompts',
   'systemInstruction',
   'fallbackMessage',
+  'answerOnlyFromDocuments',
   'answerTemperature',
   'maxAnswerTokens',
   'reasoningEffort',
@@ -111,6 +114,7 @@ export function formValuesFromSettings(settings: ChatbotSettings): ChatbotSettin
     suggestedPrompts: [...settings.suggestedPrompts],
     systemInstruction: settings.systemInstruction,
     fallbackMessage: settings.fallbackMessage,
+    answerOnlyFromDocuments: settings.answerOnlyFromDocuments,
     answerTemperature: String(settings.answerTemperature),
     maxAnswerTokens: String(settings.maxAnswerTokens),
     maxSources: String(settings.maxSources),
@@ -160,6 +164,7 @@ export function toSettings(values: ChatbotSettingsFormValues): ChatbotSettings {
     suggestedPrompts: nonEmptyPrompts(values.suggestedPrompts),
     systemInstruction: values.systemInstruction.trim(),
     fallbackMessage: values.fallbackMessage.trim(),
+    answerOnlyFromDocuments: values.answerOnlyFromDocuments,
     answerTemperature: Number(values.answerTemperature),
     maxAnswerTokens: Number(values.maxAnswerTokens),
     maxSources: Number(values.maxSources),

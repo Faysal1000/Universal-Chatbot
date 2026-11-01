@@ -26,7 +26,8 @@ interface TurnImages {
 /**
  * Answers one stored turn and writes every step to its event log: rewrite the batch
  * into search queries, retrieve sources, then either the no-evidence fallback or a
- * streamed, cited answer. Runs detached from the HTTP request that submitted it.
+ * streamed answer, cited when sources were found. Runs detached from the HTTP request
+ * that submitted it.
  */
 @Injectable()
 export class TurnRunnerService {
@@ -59,7 +60,7 @@ export class TurnRunnerService {
       const images = await this.loadImages(execution);
       const searchQueries = await this.rewriteQueries(execution, history);
       const retrieval = await this.retrieveSources(execution, searchQueries, images);
-      if (retrieval.outcome === 'no_evidence') {
+      if (retrieval.outcome === 'no_evidence' && execution.settings.answerOnlyFromDocuments) {
         await this.answerWithFallback(execution);
         return;
       }

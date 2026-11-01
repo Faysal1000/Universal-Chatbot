@@ -1640,6 +1640,8 @@ export interface operations {
                         suggestedPrompts: string[];
                         systemInstruction: string;
                         fallbackMessage: string;
+                        /** @description Send the fallback message when no document matches; off lets the model answer anyway */
+                        answerOnlyFromDocuments: boolean;
                         answerTemperature: number;
                         maxAnswerTokens: number;
                         maxSources: number;
@@ -1683,6 +1685,8 @@ export interface operations {
                     suggestedPrompts: string[];
                     systemInstruction: string;
                     fallbackMessage: string;
+                    /** @description Send the fallback message when no document matches; off lets the model answer anyway */
+                    answerOnlyFromDocuments: boolean;
                     answerTemperature: number;
                     maxAnswerTokens: number;
                     maxSources: number;
@@ -1718,6 +1722,8 @@ export interface operations {
                         suggestedPrompts: string[];
                         systemInstruction: string;
                         fallbackMessage: string;
+                        /** @description Send the fallback message when no document matches; off lets the model answer anyway */
+                        answerOnlyFromDocuments: boolean;
                         answerTemperature: number;
                         maxAnswerTokens: number;
                         maxSources: number;
@@ -1767,6 +1773,8 @@ export interface operations {
                         suggestedPrompts: string[];
                         systemInstruction: string;
                         fallbackMessage: string;
+                        /** @description Send the fallback message when no document matches; off lets the model answer anyway */
+                        answerOnlyFromDocuments: boolean;
                         answerTemperature: number;
                         maxAnswerTokens: number;
                         maxSources: number;
@@ -1818,6 +1826,8 @@ export interface operations {
                         suggestedPrompts: string[];
                         systemInstruction: string;
                         fallbackMessage: string;
+                        /** @description Send the fallback message when no document matches; off lets the model answer anyway */
+                        answerOnlyFromDocuments: boolean;
                         answerTemperature: number;
                         maxAnswerTokens: number;
                         maxSources: number;

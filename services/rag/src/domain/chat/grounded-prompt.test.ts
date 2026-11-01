@@ -66,6 +66,13 @@ describe('buildGroundedPrompt', () => {
     expect(textOf(messages.at(-1))).toMatch(/cite each fact with its ref, such as \[1\]/);
   });
 
+  it('without sources, sends only the visitor message and lets the model answer from the conversation', () => {
+    const messages = buildGroundedPrompt({ ...baseInput, sources: [] });
+
+    expect(textOf(messages[0])).toContain('Answer from the earlier conversation or general knowledge.');
+    expect(textOf(messages.at(-1))).toBe('Visitor message:\nHow much leave do I get?');
+  });
+
   it('adds the rolling summary to the system message and history as alternating turns', () => {
     const messages = buildGroundedPrompt({
       ...baseInput,

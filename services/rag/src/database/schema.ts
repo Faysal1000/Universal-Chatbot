@@ -405,12 +405,14 @@ export const chatbotSettingsVersions = pgTable(
       .default(sql`'{}'::text[]`),
     /** Admin-written behaviour instruction; non-editable grounding rules are added in code. */
     systemInstruction: text('system_instruction').notNull(),
-    /** Sent verbatim when retrieval finds no sufficiently relevant source. */
+    /** Sent verbatim when retrieval finds no sufficiently relevant source and answers stay in the documents. */
     fallbackMessage: text('fallback_message').notNull(),
+    /** Off: with no relevant source the model still answers, from the conversation and general knowledge. */
+    answerOnlyFromDocuments: boolean('answer_only_from_documents').notNull().default(true),
     answerTemperature: real('answer_temperature').notNull().default(0.2),
     maxAnswerTokens: integer('max_answer_tokens').notNull().default(1024),
     maxSources: smallint('max_sources').notNull().default(8),
-    /** Dense cosine similarity a passage must reach to be used; with none, the fallback is sent. */
+    /** Dense cosine similarity a passage must reach to be used. */
     minSimilarity: real('min_similarity').notNull().default(0.6),
     /** Streams the model's reasoning to visitors (`/config.features.reasoning`). */
     showReasoning: boolean('show_reasoning').notNull().default(false),

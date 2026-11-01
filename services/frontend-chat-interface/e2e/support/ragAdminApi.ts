@@ -11,6 +11,7 @@ const SETTINGS_FIELDS = [
   'suggestedPrompts',
   'systemInstruction',
   'fallbackMessage',
+  'answerOnlyFromDocuments',
   'answerTemperature',
   'maxAnswerTokens',
   'maxSources',

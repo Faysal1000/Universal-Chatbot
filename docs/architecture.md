@@ -107,7 +107,7 @@ sequenceDiagram
   API->>E: embed query (task=query)
   API->>PG: pgvector cosine top-K + full-text top-K, enabled docs only
   API->>API: RRF fusion, dedupe, keep sources ≥ min_similarity, top max_sources
-  alt no source reaches min_similarity
+  alt no source reaches min_similarity and answer_only_from_documents
     API-->>Visitor: fallback message (no LLM call)
   else
     API->>API: fit prompt to the context window (sources, summary, recent turns)
