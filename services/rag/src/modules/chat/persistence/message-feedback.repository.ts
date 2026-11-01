@@ -34,6 +34,14 @@ export class MessageFeedbackRepository {
       });
   }
 
+  async delete(messageId: string): Promise<boolean> {
+    const deleted = await this.database
+      .delete(messageFeedback)
+      .where(eq(messageFeedback.messageId, messageId))
+      .returning({ messageId: messageFeedback.messageId });
+    return deleted.length > 0;
+  }
+
   async listForMessages(messageIds: readonly string[]): Promise<MessageFeedbackRecord[]> {
     if (messageIds.length === 0) return [];
     return this.database

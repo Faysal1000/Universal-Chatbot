@@ -375,7 +375,8 @@ export interface paths {
         get: operations["AdminConversationsController_describe"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete a conversation with its messages, feedback and summary */
+        delete: operations["AdminConversationsController_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -393,6 +394,23 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/feedback/{messageId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a visitor's rating of an answer */
+        delete: operations["AdminConversationsController_deleteFeedback"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2021,6 +2039,27 @@ export interface operations {
             };
         };
     };
+    AdminConversationsController_delete: {
+        parameters: {
+            query?: {
+                force?: "true" | "false";
+            };
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AdminConversationsController_listFeedback: {
         parameters: {
             query?: {
@@ -2056,6 +2095,25 @@ export interface operations {
                         createdAt: string;
                     }[];
                 };
+            };
+        };
+    };
+    AdminConversationsController_deleteFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                messageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

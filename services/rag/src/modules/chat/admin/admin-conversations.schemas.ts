@@ -10,6 +10,14 @@ export const adminConversationListQuerySchema = z.object({
   cursor: z.string().max(500).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(25),
 });
+export const deleteConversationQuerySchema = z.object({
+  force: z
+    .enum(['true', 'false'])
+    .transform((flag) => flag === 'true')
+    .default(false)
+    .describe('Delete even while a reply is being written, cancelling it'),
+});
+
 export type AdminConversationListQuery = z.infer<typeof adminConversationListQuerySchema>;
 
 export const adminConversationSchema = conversationSchema.extend({

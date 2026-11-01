@@ -5,15 +5,17 @@ import { describeError } from '@/shared/api/httpClient';
 import { joinClassNames } from '@/shared/lib/classNames';
 import { formatInteger, formatShortDateTime } from '@/shared/lib/format';
 import { ROUTE_PATHS } from '@/shared/routePaths';
-import { RefreshButton } from '@/shared/ui/Button';
+import { Button, RefreshButton } from '@/shared/ui/Button';
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { SelectField } from '@/shared/ui/FormFields';
 import { Card, PageHeader } from '@/shared/ui/Layout';
 import { LoadingState } from '@/shared/ui/Spinner';
 import { StatePlacard } from '@/shared/ui/StatePlacard';
 import { EmptyState, ErrorBanner } from '@/shared/ui/StatusMessages';
 import { DataCell, HeaderCell, Table } from '@/shared/ui/Table';
+import { useToast } from '@/shared/ui/toastContext';
 
-import { useRecentFeedback } from './api/feedbackQueries';
+import { useDeleteFeedback, useRecentFeedback } from './api/feedbackQueries';
 import { FEEDBACK_LIMIT_OPTIONS } from './api/feedbackTypes';
 import type { FeedbackEntry, FeedbackLimit } from './api/feedbackTypes';
 import { countRatings, filterFeedbackByRating, ratedMessageLink } from './feedbackModel';
@@ -42,6 +44,19 @@ export function FeedbackPage() {
   const [limit, setLimit] = useState<FeedbackLimit>(FEEDBACK_LIMIT_OPTIONS[0]);
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>('all');
   const feedbackQuery = useRecentFeedback(limit);
+  const deleteFeedbackMutation = useDeleteFeedback();
+  const { showToast } = useToast();
+  const [entryPendingDelete, setEntryPendingDelete] = useState<FeedbackEntry | null>(null);
+
+  const confirmDelete = () => {
+    if (!entryPendingDelete) return;
+    deleteFeedbackMutation.mutate(entryPendingDelete.messageId, {
+      onSuccess: () => {
+        setEntryPendingDelete(null);
+        showToast('Feedback deleted.', 'success');
+      },
+    });
+  };
 
   return (
     <>
@@ -84,10 +99,24 @@ export function FeedbackPage() {
             <FeedbackList
               entries={filterFeedbackByRating(feedbackQuery.data, ratingFilter)}
               hasAnyFeedback={feedbackQuery.data.length > 0}
+              onDelete={(entry) => {
+                deleteFeedbackMutation.reset();
+                setEntryPendingDelete(entry);
+              }}
             />
           </Card>
         </div>
       )}
+      <ConfirmDialog
+        isOpen={entryPendingDelete !== null}
+        title="Delete this feedback?"
+        message={<p>The rating and its comment are removed. The answer itself stays in the conversation.</p>}
+        confirmLabel="Delete feedback"
+        isConfirming={deleteFeedbackMutation.isPending}
+        errorMessage={deleteFeedbackMutation.isError ? describeError(deleteFeedbackMutation.error) : null}
+        onConfirm={confirmDelete}
+        onCancel={() => setEntryPendingDelete(null)}
+      />
     </>
   );
 }
@@ -102,7 +131,15 @@ function FeedbackSummary({ entries }: { entries: readonly FeedbackEntry[] }) {
   );
 }
 
-function FeedbackList({ entries, hasAnyFeedback }: { entries: readonly FeedbackEntry[]; hasAnyFeedback: boolean }) {
+function FeedbackList({
+  entries,
+  hasAnyFeedback,
+  onDelete,
+}: {
+  entries: readonly FeedbackEntry[];
+  hasAnyFeedback: boolean;
+  onDelete: (entry: FeedbackEntry) => void;
+}) {
   if (entries.length === 0) {
     return hasAnyFeedback ? (
       <EmptyState title="No ratings of this kind" />
@@ -126,7 +163,7 @@ function FeedbackList({ entries, hasAnyFeedback }: { entries: readonly FeedbackE
           <HeaderCell>Comment</HeaderCell>
           <HeaderCell>Rated</HeaderCell>
           <HeaderCell>
-            <span className="sr-only">Answer</span>
+            <span className="sr-only">Actions</span>
           </HeaderCell>
         </tr>
       </thead>
@@ -158,9 +195,14 @@ function FeedbackList({ entries, hasAnyFeedback }: { entries: readonly FeedbackE
             </DataCell>
             <DataCell className="tabular whitespace-nowrap">{formatShortDateTime(entry.createdAt)}</DataCell>
             <DataCell className="text-right whitespace-nowrap">
-              <Link to={ratedMessageLink(entry)} className="text-sm font-medium text-accent hover:underline">
-                Open the rated answer
-              </Link>
+              <span className="inline-flex items-center gap-3">
+                <Link to={ratedMessageLink(entry)} className="text-sm font-medium text-accent hover:underline">
+                  Open the rated answer
+                </Link>
+                <Button size="small" variant="danger" onClick={() => onDelete(entry)}>
+                  Delete
+                </Button>
+              </span>
             </DataCell>
           </tr>
         ))}

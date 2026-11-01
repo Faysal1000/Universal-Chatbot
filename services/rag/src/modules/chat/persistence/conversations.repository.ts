@@ -89,8 +89,13 @@ export class ConversationsRepository {
     return updated;
   }
 
-  async delete(conversationId: string): Promise<void> {
-    await this.database.delete(conversations).where(eq(conversations.id, conversationId));
+  /** Messages, turns, feedback and summaries go with it (cascade). */
+  async delete(conversationId: string): Promise<boolean> {
+    const deleted = await this.database
+      .delete(conversations)
+      .where(eq(conversations.id, conversationId))
+      .returning({ id: conversations.id });
+    return deleted.length > 0;
   }
 
   async count(): Promise<number> {

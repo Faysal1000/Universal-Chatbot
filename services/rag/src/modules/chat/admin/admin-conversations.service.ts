@@ -14,6 +14,7 @@ import {
   MessageFeedbackRepository,
 } from '../persistence/message-feedback.repository.js';
 import { RetrievalTracesRepository } from '../persistence/retrieval-traces.repository.js';
+import { TurnStreamService } from '../turns/turn-stream.service.js';
 import type {
   AdminConversationDetailView,
   AdminConversationListQuery,
@@ -22,7 +23,7 @@ import type {
   AdminTurnView,
 } from './admin-conversations.schemas.js';
 
-/** Read-only view of every visitor conversation, with what retrieval did per turn. */
+/** Every visitor conversation, with what retrieval did per turn, and the admin's right to delete it. */
 @Injectable()
 export class AdminConversationsService {
   constructor(
@@ -33,6 +34,7 @@ export class AdminConversationsService {
     private readonly retrievalTracesRepository: RetrievalTracesRepository,
     private readonly messageFeedbackRepository: MessageFeedbackRepository,
     private readonly chatMessagePresenter: ChatMessagePresenter,
+    private readonly turnStream: TurnStreamService,
   ) {}
 
   async list(
@@ -82,6 +84,30 @@ export class AdminConversationsService {
         ),
       ),
     };
+  }
+
+  /** A reply still being written blocks the delete unless `force` is set, which cancels it first. */
+  async delete(conversationId: string, force: boolean): Promise<void> {
+    const activeTurn = await this.chatTurnsRepository.findActive(conversationId);
+    if (activeTurn !== undefined) {
+      if (!force) {
+        throw new ApplicationError(
+          409,
+          'conversation_active',
+          'A reply is still being written in this conversation. Force the delete to stop it.',
+        );
+      }
+      await this.turnStream.cancel(activeTurn);
+    }
+    if (!(await this.conversationsRepository.delete(conversationId))) {
+      throw new ApplicationError(404, 'not_found', 'No conversation has this id.');
+    }
+  }
+
+  async deleteFeedback(messageId: string): Promise<void> {
+    if (!(await this.messageFeedbackRepository.delete(messageId))) {
+      throw new ApplicationError(404, 'not_found', 'No feedback exists for this message.');
+    }
   }
 
   async listFeedback(limit: number): Promise<AdminFeedbackView[]> {

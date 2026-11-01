@@ -3643,6 +3643,44 @@
         ],
         "summary": "A conversation with every turn, its rewritten queries, retrieval trace and rolling summary",
         "tags": ["Admin: conversations"]
+      },
+      "delete": {
+        "operationId": "AdminConversationsController_delete",
+        "parameters": [
+          {
+            "name": "conversationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "force",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "description": "Delete even while a reply is being written, cancelling it",
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "admin-session": []
+          },
+          {
+            "admin-api-key": []
+          }
+        ],
+        "summary": "Delete a conversation with its messages, feedback and summary",
+        "tags": ["Admin: conversations"]
       }
     },
     "/v1/admin/feedback": {
@@ -3733,6 +3771,36 @@
           }
         ],
         "summary": "Most recent visitor ratings of answers",
+        "tags": ["Admin: conversations"]
+      }
+    },
+    "/v1/admin/feedback/{messageId}": {
+      "delete": {
+        "operationId": "AdminConversationsController_deleteFeedback",
+        "parameters": [
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "admin-session": []
+          },
+          {
+            "admin-api-key": []
+          }
+        ],
+        "summary": "Delete a visitor's rating of an answer",
         "tags": ["Admin: conversations"]
       }
     },

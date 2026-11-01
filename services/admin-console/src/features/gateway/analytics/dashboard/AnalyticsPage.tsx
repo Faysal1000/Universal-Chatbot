@@ -23,6 +23,7 @@ import { EmptyState, ErrorBanner } from '@/shared/ui/StatusMessages';
 import { useAnalyticsOverview, useAnalyticsTimeseries, useTopErrors } from '../api/analyticsQueries';
 import { analyticsQueryKeys } from '../api/analyticsQueryKeys';
 import type { AnalyticsOverviewResponse } from '../api/analyticsTypes';
+import { ModelUsageTable } from './ModelUsageTable';
 import { RankedBars } from './RankedBars';
 import { countErrorsByStatus, rankGroupsByLatency, rankGroupsByRequests } from './dashboardModel';
 import { buildOutcomeChartData } from './timeseriesRows';
@@ -166,6 +167,10 @@ export function AnalyticsPage() {
               />
             </Card>
           </div>
+
+          <Card title="Models" bodyClassName="p-0">
+            <ModelUsageTable models={modelOverview.groups} />
+          </Card>
         </div>
       )}
     </>

@@ -56,5 +56,6 @@ import { TurnStreamService } from './turns/turn-stream.service.js';
     CitationAssembler,
     TurnCompletionService,
   ],
+  exports: [TurnStreamService],
 })
 export class PublicChatModule {}

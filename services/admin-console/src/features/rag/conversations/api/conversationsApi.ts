@@ -22,3 +22,11 @@ export function listConversations(
 export function getConversation(conversationId: string): Promise<ConversationDetail> {
   return requestRagApi<ConversationDetail>(`/conversations/${encodeURIComponent(conversationId)}`);
 }
+
+/** `force` deletes even while a reply is being written, cancelling it. */
+export function deleteConversation(conversationId: string, force: boolean): Promise<void> {
+  return requestRagApi<undefined>(`/conversations/${encodeURIComponent(conversationId)}`, {
+    method: 'DELETE',
+    queryParameters: { force },
+  });
+}

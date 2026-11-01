@@ -1,4 +1,4 @@
-import { ArrowLeft, Ban } from 'lucide-react';
+import { ArrowLeft, Ban, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 
@@ -14,6 +14,7 @@ import { EmptyState, ErrorBanner } from '@/shared/ui/StatusMessages';
 import { CreateClientBlockDialog } from '../clientBlocks/components/CreateClientBlockDialog';
 import { useConversation } from './api/conversationQueries';
 import type { ConversationDetail } from './api/conversationTypes';
+import { DeleteConversationDialog } from './components/DeleteConversationDialog';
 import { TurnSection } from './components/TurnSection';
 import { visitorConversationsSearch } from './conversationFilters';
 import { shortUuid } from './retrievalTraceModel';
@@ -58,6 +59,7 @@ function useScrollToHashTarget(isContentReady: boolean) {
 
 function ConversationTranscript({ conversation }: { conversation: ConversationDetail }) {
   const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   return (
     <>
       <PageHeader
@@ -76,6 +78,13 @@ function ConversationTranscript({ conversation }: { conversation: ConversationDe
               onClick={() => setIsBlockDialogOpen(true)}
             >
               Block this visitor
+            </Button>
+            <Button
+              variant="danger"
+              leadingIcon={<Trash2 aria-hidden="true" className="size-4" />}
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              Delete
             </Button>
           </>
         }
@@ -101,6 +110,11 @@ function ConversationTranscript({ conversation }: { conversation: ConversationDe
         isOpen={isBlockDialogOpen}
         onClose={() => setIsBlockDialogOpen(false)}
         initialVisitorSessionId={conversation.visitorSessionId}
+      />
+      <DeleteConversationDialog
+        conversation={conversation}
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
       />
     </>
   );
