@@ -16,7 +16,7 @@ import { changesFromPreviousVersion, settingsVersionAuthor, settingsVersionPlaca
 import { SettingChangesList } from './SettingChangesList';
 
 /** The newest versions listed before the operator asks for the rest; the active one is always listed. */
-const VERSIONS_SHOWN_AT_FIRST = 20;
+const VERSIONS_SHOWN_AT_FIRST = 10;
 
 export interface SettingsVersionHistoryProps {
   /** Newest first, as rag lists them. */
@@ -26,10 +26,10 @@ export interface SettingsVersionHistoryProps {
 /** Every saved version; activating an older one is the rollback. Nothing is ever deleted. */
 export function SettingsVersionHistory({ versions }: SettingsVersionHistoryProps) {
   const [versionToActivate, setVersionToActivate] = useState<ChatbotSettingsVersion | null>(null);
-  const [isShowingAllVersions, setIsShowingAllVersions] = useState(false);
-  const shownVersions = isShowingAllVersions
-    ? versions
-    : versions.filter((version, index) => index < VERSIONS_SHOWN_AT_FIRST || version.isActive);
+  const [isShowingOlderVersions, setIsShowingOlderVersions] = useState(false);
+  const newestVersions = versions.filter((version, index) => index < VERSIONS_SHOWN_AT_FIRST || version.isActive);
+  const olderVersionCount = versions.length - newestVersions.length;
+  const shownVersions = isShowingOlderVersions ? versions : newestVersions;
   const changesByVersion = changesFromPreviousVersion(versions);
   const activeVersion = versions.find((version) => version.isActive);
 
@@ -60,9 +60,11 @@ export function SettingsVersionHistory({ versions }: SettingsVersionHistoryProps
           ))}
         </tbody>
       </Table>
-      {shownVersions.length < versions.length ? (
+      {olderVersionCount > 0 ? (
         <div className="flex justify-center border-t border-border p-3">
-          <Button onClick={() => setIsShowingAllVersions(true)}>Show all {versions.length} versions</Button>
+          <Button onClick={() => setIsShowingOlderVersions(!isShowingOlderVersions)}>
+            {isShowingOlderVersions ? 'Show fewer versions' : `Show ${olderVersionCount} older versions`}
+          </Button>
         </div>
       ) : null}
       <ActivateVersionDialog
